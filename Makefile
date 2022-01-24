@@ -1,3 +1,5 @@
 CC = gcc
 makefuse:
-	$(CC) -Wall main.c -o main `pkg-config fuse --cflags --libs`
+	$(CC) -Wall main.c `pkg-config fuse3 --cflags --libs` -o main
+	./main -f mount
+	rm main

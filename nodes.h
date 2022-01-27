@@ -11,14 +11,14 @@ typedef struct {
 	uint64_t sing_indirect_blocks[SING_INDIR];//88
 	uint64_t doub_indirect_blocks[DOUB_INDIR];//96
 	uint64_t trip_indirect_blocks[TRIP_INDIR];//104
-	uint64_t ending;//112
+	uint64_t size;//112
 	uint64_t flag;//120 this is set to 64bit because of alignment
 } inode;
 
 static uint64_t head = 0;
 static uint64_t i_list_size = 0;
 
-void write_block(inode* node,uint64_t index,void* buf);
+void write_block(uint64_t inum,uint64_t index,void* buf,uint64_t size);
 int read_block(inode* node,uint64_t index,void* buf);
 int free_data_block(int id);
 uint64_t allocate_data_block();

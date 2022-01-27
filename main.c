@@ -94,19 +94,20 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	(void) offset;
 	(void) fi;
 	(void) flags;
-
+	//printf("read addr called %s\n",path);
 	if (strcmp(path, "/") != 0)
 		return -ENOENT;
 
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
-	filler(buf, options.filename, NULL, 0, 0);
+	//filler(buf, options.filename, NULL, 0, 0);
 
 	return 0;
 }
 
 static int hello_open(const char *path, struct fuse_file_info *fi)
 {
+	// standard open should be path,fi->flag
 	if (strcmp(path+1, options.filename) != 0)
 		return -ENOENT;
 
@@ -139,8 +140,8 @@ static const struct fuse_operations hello_oper = {
 	.init           = hello_init,
 	.getattr	= hello_getattr,
 	.readdir	= hello_readdir,
-	.open		= hello_open,
-	.read		= hello_read,
+	.open		= hello_open, //open()
+	.read		= hello_read,//read()
 };
 
 static void show_help(const char *progname)
@@ -179,6 +180,7 @@ int main(int argc, char *argv[])
 		assert(fuse_opt_add_arg(&args, "--help") == 0);
 		args.argv[0][0] = '\0';
 	}
+
 
 	ret = fuse_main(args.argc, args.argv, &hello_oper, NULL);
 	fuse_opt_free_args(&args);

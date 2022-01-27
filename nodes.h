@@ -14,4 +14,10 @@ typedef struct {
 	uint64_t owner;//120
 } inode;
 
-int head = 0;
+uint64_t head = 0;
+
+int write_block(unsigned int block_id,unsigned int offset,unsigned int size,void* buffer);
+int read_block(unsigned int block_id,unsigned int offset,unsigned int size,void* buffer);
+int free_data_block(int id);
+uint64_t allocate_data_block();
+uint64_t allocate_data_block();

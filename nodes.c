@@ -57,6 +57,8 @@ int mkfs(){
 	uint64_t* supernode  = (uint64_t*) tmp;
 	int start  = INODES/INODE_PER_BLOCK + 1;
 	*supernode = start;
+	supernode += sizeof(uint64_t);
+	*supernode = 0; //inode count
 	write_disk(0,tmp);
 
 	printf("data block starts from %d\n",start);
@@ -64,25 +66,89 @@ int mkfs(){
 }
 
 // inum start from zero
-inode get_inode(uint32_t inum){
+inode* get_inode(uint64_t inum){
+	//uint64_t inodes_count = 0;
+	//read_block(0,sizeof(uint64_t),sizeof(uint64_t),&inodes_count);
+	/*if(inodes_count<inum){
+		printf("get_inode inum wrong %d over %d",inum,inodes_count);
+		return NULL;
+	}*/
 	uint32_t block_id = 1 + inum / INODE_PER_BLOCK;
 	uint32_t offset = sizeof(inode)*(inum%INODE_PER_BLOCK);
+	inode node_tmp;
+	read_block(block_id,offset,sizeof(inode),&node_tmp);
+	return &node_tmp
 }
 
-int allocate_inode(inode data){
+/* zero for failure */
+uint64_t allocate_inode(inode* data){
+	/*uint64_t inodes_count = 0;
+	read_block(0,sizeof(uint64_t),sizeof(uint64_t),&inodes_count);
+	if(inodes_count>INODES){
+		printf("NO inode available %d over %d",inodes_count,INODES);
+		return 0;
+	}
+	inodes_count += 1;*/
+	uint32_t block_id = 1 + inodes_count / INODE_PER_BLOCK;
+	uint32_t offset = sizeof(inode)*(inodes_count%INODE_PER_BLOCK);
+	write_disk(block_id,offset,sizeof(inode),data);
+	write_disk(0,sizeof(uint64_t),sizeof(uint64_t),&inodes_count);
+	return inodes_count;
+}
+
+int free_inode(uint64_t inum){
 
 }
 
-int free_inode(inode data){
-
-}
-
-int allocate_data_block(){
-
+uint64_t allocate_data_block(){
+	uint8_t tmp[BLOCKSIZE];
+	uint64_t* data = (uint64_t*) tmp;
+	read_block(head,0,BLOCKSIZE,tmp);
+	int i = 0;
+	int res = 0;
+	for(i=1;i<(BLOCKSIZE/4);i++){
+		if(data[i]!=0){
+			res = 1;
+			break;
+		}
+	}
+	if(res==1){
+		res = data[i];
+		data[i] = 0;
+		write_disk(head,0,BLOCKSIZE,tmp);
+	}
+	else{
+		res = head;
+		head = data[0];
+		data[0] = 0;
+		write_disk(0,0,sizeof(uint64_t),&head);
+		write_disk(res,0,BLOCKSIZE,tmp);
+	}
+	return res;
 }
 
 int free_data_block(int id){
+	uint8_t tmp[BLOCKSIZE];
+	uint64_t* data = (uint64_t*) tmp;
+	read_block(head,0,BLOCKSIZE,tmp);
+	int i = 0, flag = 0;
+	for(i=1;i<(BLOCKSIZE/4);i++){
+		if(data[i] == 0){
+			flag = 1;
+			data[i] = id;
+			break;
+		}
+	}
 
+	if(flag==1){
+		write_block(head,0,BLOCKSIZE,tmp);
+	}
+	else{
+		int pre_head = head;
+		head = id;
+		write_block(head,0,sizeof(uint64_t),&pre_head);
+	}
+	return 0;
 }
 
 /* when to write back is a serious question */

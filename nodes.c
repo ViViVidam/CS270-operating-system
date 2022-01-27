@@ -316,26 +316,28 @@ void write_block(uint64_t inum,uint64_t index,void* buf,uint64_t size){
 }
 
 /* need robust */
-int read_block(inode* node,uint64_t index,void* buf){
+int read_block(uint64_t inum,uint64_t index,void* buf){
+	inode node;
+	read_inode(inum,&node);
 	char tmp[BLOCKSIZE];
 	uint64_t* address = (uint64_t*)tmp;
 	if(index<DIRECT_BLOCK){
-		if(node->direct_blocks[index]==0)
+		if(node.direct_blocks[index]==0)
 			return 0;
-		read_disk(node->direct_blocks[index],0,BLOCKSIZE,buf);
+		read_disk(node.direct_blocks[index],0,BLOCKSIZE,buf);
 	}
 	else if(index< (DIRECT_BLOCK+SING_INDIR*512) ){
-		if(node->sing_indirect_blocks[0]==0)
+		if(node.sing_indirect_blocks[0]==0)
 			return 0;
-		read_disk(node->sing_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		read_disk(node.sing_indirect_blocks[0],0,BLOCKSIZE,tmp);
 		if(address[index-DIRECT_BLOCK]==0)
 			return 0;
 		read_disk(address[index-DIRECT_BLOCK],0,BLOCKSIZE,buf);
 	}
 	else if(index< (DIRECT_BLOCK+SING_INDIR*512+DOUB_INDIR*512*512)){
-		if(node->doub_indirect_blocks[0]==0)
+		if(node.doub_indirect_blocks[0]==0)
 			return 0;
-		read_disk(node->doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		read_disk(node.doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
 		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/512;
 		if(address[next_level_index]==0)
 			return 0;
@@ -346,9 +348,9 @@ int read_block(inode* node,uint64_t index,void* buf){
 		read_disk(address[index],0,BLOCKSIZE,buf);
 	}
 	else{
-		if(node->trip_indirect_blocks[0]==0)
+		if(node.trip_indirect_blocks[0]==0)
 			return 0;
-		read_disk(node->trip_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		read_disk(node.trip_indirect_blocks[0],0,BLOCKSIZE,tmp);
 		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ (512*512);
 		if(address[next_level_index]==0)
 			return 0;

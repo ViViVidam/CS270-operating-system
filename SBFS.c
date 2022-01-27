@@ -94,23 +94,22 @@ int SBFS_read(uint64_t block_id,uint64_t offset,int64_t size,void* buf){
 	return 0;
 }
 
-int SBFS_write(int block_id,uint64_t offset,int64_t size,void* buf){
+int SBFS_write(int inum,uint64_t offset,int64_t size,void* buf){
 	char* buffer = (char*) buf;
 	char data[BLOCKSIZE];
 
-	assert(block_id>i_list_size);
-	inode* tmp = get_inode(block_id);
+	assert(inum>i_list_size);
 	int start = offset / BLOCKSIZE;
 	uint64_t block_offset = offset % BLOCKSIZE;	
 	
 	assert(offset<BLOCKSIZE);
 	while(size>0){
-		if(read_block(tmp,start,data)){
+		if(read_block(inum,start,data)){
 			int cp_size = MIN(size,BLOCKSIZE-offset);
 			memcpy(data+offset,buffer,cp_size);
 			buffer += cp_size;
 			size -= cp_size;
-			write_block(tmp,start,data);
+			write_block(block_id,start,data,size);
 			start += 1;
 		}
 		else{

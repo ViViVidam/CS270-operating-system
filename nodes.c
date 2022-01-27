@@ -3,8 +3,36 @@
 #include <string.h>
 #include "nodes.h"
 #include <math.h>
+#include <assert.h>
 
 #define INODE_PER_BLOCK (BLOCKSIZE/(sizeof(inode)/8))
+
+void cp_inode(inode* dest,inode* source){
+	for(int i = 0;i<DIRECT_BLOCK;i++){
+		dest->direct_blocks[i] = source->direct_blocks[i]
+	}
+	for(int i=0;i<SING_INDIR;i++){
+		dest->sing_indirect_blocks[i] = source->sing_indirect_blocks[i];
+	}
+	for(int i=0;i<DOUB_INDIR;i++){
+		dest->doub_indirect_blocks[i] = source->doub_indirect_blocks[i];
+	}
+	for(int i=0;i<TRIP_INDIR;i++){
+		dest->trip_indirect_blocks[i] = source->trip_indirect_blocks[i];
+	}
+	dest->flag = source->flag;
+}
+
+void write_inode(uint64_t inum,inode* node){
+	char data[BLOCKSIZE];
+	uint64_t block_id = inum / INODE_PER_BLOCK + 1;
+	uint64_t offset = inum % INODE_PER_BLOCK;
+	read_disk(block_id,data);
+	inode* inodes = (inode*) data;
+	assert(node->flag==1);
+	cp_inode(&inodes[offset],node);
+	write_disk(block_id,data);
+}
 
 void init_free_disk(int start){
 	char data[BLOCKSIZE];
@@ -79,12 +107,14 @@ int mkfs(){
 }
 
 // inum start from zero
-inode* get_inode(uint64_t inum){
+void get_inode(uint64_t inum,inode* node){
+	char data[BLOCKSIZE];
 	uint32_t block_id = 1 + inum / INODE_PER_BLOCK;
 	uint32_t offset = inum%INODE_PER_BLOCK;
 	inode node_tmp;
-	read_block(block_id,sizeof(inode)*offset,sizeof(inode),&node_tmp);
-	return &node_tmp
+	read_disk(block_id,data);
+	inode* inodes = (*inode) data;
+	cp_inode(node,&inodes[offset]);
 }
 
 /* zero for failure */
@@ -210,7 +240,7 @@ int free_data_block(uint64_t id){
 	return 0;
 }*/
 
-void write_block(inode* node,uint64_t index,unsigned int size,void* buf){
+void write_block(inode* node,uint64_t index,void* buf){
 	char tmp[BLOCKSIZE];
 	uint64_t* address = (uint64_t*)tmp;
 	if(index<DIRECT_BLOCK){
@@ -239,7 +269,7 @@ void write_block(inode* node,uint64_t index,unsigned int size,void* buf){
 }
 
 /* need robust */
-int read_block(inode* node,uint64_t index,unsigned int size,void* buf){
+int read_block(inode* node,uint64_t index,void* buf){
 	char tmp[BLOCKSIZE];
 	uint64_t* address = (uint64_t*)tmp;
 	if(index<DIRECT_BLOCK){

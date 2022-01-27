@@ -18,11 +18,11 @@ typedef struct {
 static uint64_t head = 0;
 static uint64_t i_list_size = 0;
 
-void write_block(inode* node,uint64_t index,unsigned int size,void* buf);
-int read_block(inode* node,uint64_t index,unsigned int size,void* buf);
+void write_block(inode* node,uint64_t index,void* buf);
+int read_block(inode* node,uint64_t index,void* buf);
 int free_data_block(int id);
 uint64_t allocate_data_block();
-uint64_t allocate_data_block();
-inode* get_inode(uint64_t inum);
+void get_inode(uint64_t inum,inode* node)
+void write_inode(uint64_t inum,inode* node);
 int allocate_inode();
 int free_inode(uint64_t inum);

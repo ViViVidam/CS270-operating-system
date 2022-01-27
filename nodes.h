@@ -11,10 +11,11 @@ typedef struct {
 	uint64_t doub_indirect_blocks[DOUB_INDIR];//96
 	uint64_t trip_indirect_blocks[TRIP_INDIR];//104
 	uint64_t count;//112
-	uint64_t owner;//120
+	uint64_t flag;//120 this is set to 64bit because of alignment
 } inode;
 
-uint64_t head = 0;
+static uint64_t head = 0;
+static uint64_t i_list_size = 0;
 
 int write_block(unsigned int block_id,unsigned int offset,unsigned int size,void* buffer);
 int read_block(unsigned int block_id,unsigned int offset,unsigned int size,void* buffer);

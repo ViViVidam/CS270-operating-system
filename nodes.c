@@ -4,7 +4,6 @@
 #include "nodes.h"
 #include <math.h>
 
-#define INODES (BLOCKCOUNT/10)
 #define INODE_PER_BLOCK (BLOCKSIZE/(sizeof(inode)/8))
 
 void init_free_disk(int start){
@@ -50,15 +49,29 @@ void init_free_disk(int start){
 	}
 }
 
+void init_i_list(){
+	char tmp[BLOCKSIZE];
+	memset(tmp,0,sizeof(tmp));
+	i_list_size = BLOCKCOUNT/10;
+	for(int i=1;i<=i_list_size;i++){
+		write_disk(i,0,BLOCKSIZE,tmp);
+	}
+}
+
 int mkfs(){
 	int i =  0;
 	char tmp[BLOCKSIZE];
+	
 	memset(tmp,0,sizeof(tmp));
+
+	init_i_list();
+
 	uint64_t* supernode  = (uint64_t*) tmp;
 	int start  = INODES/INODE_PER_BLOCK + 1;
-	*supernode = start;
-	supernode += sizeof(uint64_t);
-	*supernode = 0; //inode count
+	supernode[0] = start;
+	supernode[1] = i_list_size; //inode count
+	supernode[2] = BLOCKSIZE;
+	supernode[3] = 1; //init flag
 	write_disk(0,tmp);
 
 	printf("data block starts from %d\n",start);
@@ -67,37 +80,68 @@ int mkfs(){
 
 // inum start from zero
 inode* get_inode(uint64_t inum){
-	//uint64_t inodes_count = 0;
-	//read_block(0,sizeof(uint64_t),sizeof(uint64_t),&inodes_count);
-	/*if(inodes_count<inum){
-		printf("get_inode inum wrong %d over %d",inum,inodes_count);
-		return NULL;
-	}*/
 	uint32_t block_id = 1 + inum / INODE_PER_BLOCK;
-	uint32_t offset = sizeof(inode)*(inum%INODE_PER_BLOCK);
+	uint32_t offset = inum%INODE_PER_BLOCK;
 	inode node_tmp;
-	read_block(block_id,offset,sizeof(inode),&node_tmp);
+	read_block(block_id,sizeof(inode)*offset,sizeof(inode),&node_tmp);
 	return &node_tmp
 }
 
 /* zero for failure */
-uint64_t allocate_inode(inode* data){
-	/*uint64_t inodes_count = 0;
-	read_block(0,sizeof(uint64_t),sizeof(uint64_t),&inodes_count);
-	if(inodes_count>INODES){
-		printf("NO inode available %d over %d",inodes_count,INODES);
-		return 0;
+int allocate_inode(){
+	char tmp[BLOCKSIZE];
+	int i,j,flag;
+	inode* inode_block = (*uint64_t) tmp;
+	for(i=1;i<=i_list_size;i++){
+		read_disk(i,0,BLOCKSIZE,tmp);
+		for(j=0;j<INODE_PER_BLOCK;j++){
+			if(inode_block[j].flag == 0){
+				flag = 1;
+				break;
+			}
+		}
 	}
-	inodes_count += 1;*/
-	uint32_t block_id = 1 + inodes_count / INODE_PER_BLOCK;
-	uint32_t offset = sizeof(inode)*(inodes_count%INODE_PER_BLOCK);
-	write_disk(block_id,offset,sizeof(inode),data);
-	write_disk(0,sizeof(uint64_t),sizeof(uint64_t),&inodes_count);
-	return inodes_count;
+	if(flag){
+		int block_id = (i-1)*INODE_PER_BLOCK+j;
+		inode_block[j].flag = 1;
+		write_disk(i,0,BLOCKSIZE,tmp);
+	}
+	else
+		block_id = -1;
+	return block_id;
 }
 
 int free_inode(uint64_t inum){
+	uint64_t block_id = 1 + inum / INODE_PER_BLOCK;
+	uint32_t offset = inum % INODE_PER_BLOCK;
+	inode tmp;
+	if(block_id > i_list_size){
+		printf("block_id too big %d \n",inum);
+		return -1;
+	}
+	read_block(block_id,sizeof(inode)*offset,sizeof(inode),&tmp);
 
+	for(int i = 0; i < DIRECT_BLOCK; i++){
+		free_data_block(tmp.direct_blocks[i]);
+		tmp.direct_blocks[i] = 0;
+	}
+	for(int i = 0; i < SING_INDIR; i++){
+		free_data_block(tmp.sing_indirect_blocks[i]=0);
+		tmp.sing_indirect_blocks[i] = 0;
+	}
+	for(int i = 0; i < DOUB_INDIR; i++){
+		free_data_block(tmp.doub_indirect_blocks[i]=0);
+		tmp.doub_indirect_blocks[i] = 0;
+	}
+	for(int i = 0; i < TRIP_INDIR; i++){
+		free_data_block(tmp.trip_indirect_blocks[i]=0);
+		tmp.trip_indirect_blocks[i] = 0;
+	}
+	tmp.flag = 0;
+
+	write_block(block_id,sizeof(inode)*offset,sizeof(inode),&tmp);
+
+	return 0;
 }
 
 uint64_t allocate_data_block(){
@@ -127,7 +171,7 @@ uint64_t allocate_data_block(){
 	return res;
 }
 
-int free_data_block(int id){
+int free_data_block(uint64_t id){
 	uint8_t tmp[BLOCKSIZE];
 	uint64_t* data = (uint64_t*) tmp;
 	read_block(head,0,BLOCKSIZE,tmp);

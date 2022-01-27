@@ -7,30 +7,25 @@
 
 #define INODE_PER_BLOCK (BLOCKSIZE/(sizeof(inode)/8))
 
-void cp_inode(inode* dest,inode* source){
-	for(int i = 0;i<DIRECT_BLOCK;i++){
-		dest->direct_blocks[i] = source->direct_blocks[i]
+void cp_inode_length(inode* dest,inode* source,int length){
+	uint64_t* dest_alter = (uint64_t*) dest;
+	uint64_t* source_alter = (uint64_t*) source;
+	for(int i = 0; i < fmin(length,(DIRECT_BLOCK+SING_INDIR+DOUB_INDIR+TRIP_INDIR) );i++){
+		dest_alter[i] = source_alter[i];
 	}
-	for(int i=0;i<SING_INDIR;i++){
-		dest->sing_indirect_blocks[i] = source->sing_indirect_blocks[i];
-	}
-	for(int i=0;i<DOUB_INDIR;i++){
-		dest->doub_indirect_blocks[i] = source->doub_indirect_blocks[i];
-	}
-	for(int i=0;i<TRIP_INDIR;i++){
-		dest->trip_indirect_blocks[i] = source->trip_indirect_blocks[i];
-	}
-	dest->flag = source->flag;
+	dest->flag = 1;
 }
 
-void write_inode(uint64_t inum,inode* node){
+void write_inode(uint64_t inum,inode* node,int length){
 	char data[BLOCKSIZE];
 	uint64_t block_id = inum / INODE_PER_BLOCK + 1;
 	uint64_t offset = inum % INODE_PER_BLOCK;
 	read_disk(block_id,data);
 	inode* inodes = (inode*) data;
 	assert(node->flag==1);
-	cp_inode(&inodes[offset],node);
+
+	/* length is used to escape zero out the memory when allocate inode in user space */
+	cp_inode(&inodes[offset],node,length);
 	write_disk(block_id,data);
 }
 
@@ -106,15 +101,18 @@ int mkfs(){
 	init_free_disk(start);
 }
 
-// inum start from zero
-void get_inode(uint64_t inum,inode* node){
+/* 
+	inum start from zero
+	I don't think it needs to be reading a length
+*/
+void read_inode(uint64_t inum,inode* node){
 	char data[BLOCKSIZE];
 	uint32_t block_id = 1 + inum / INODE_PER_BLOCK;
 	uint32_t offset = inum%INODE_PER_BLOCK;
 	inode node_tmp;
 	read_disk(block_id,data);
 	inode* inodes = (*inode) data;
-	cp_inode(node,&inodes[offset]);
+	cp_inode(node,&inodes[offset],DIRECT_BLOCK+SING_INDIR+DOUB_INDIR+TRIP_INDIR);
 }
 
 /* zero for failure */

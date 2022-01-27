@@ -128,7 +128,8 @@ int SBFS_mkdir(char* path, char* filename){
 	inode node;//no need to set node.flag = 1;
 	uint64_t datablock = allocate_data_block();
 	inode node.direct_blocks[0] = datablock;
-	write_inode(inum,&node);
+	write_inode(inum,&node,1);
+	
 	dir new_dir;
 	new_dir.inum = 0;
 	SBFS_write(datablock,0,sizeof(dir),&new_dir);

@@ -35,7 +35,7 @@ struct fuse_operations {
 #include <fcntl.h>
 #include <stddef.h>
 #include <assert.h>
-
+#include "SBSF.h"
 /*
  * Command line options
  *
@@ -136,12 +136,17 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
 	return size;
 }
 
+static int mkdir(const char *, mode_t){
+	return SBSF_mkdir();
+}
+
 static const struct fuse_operations hello_oper = {
 	.init           = hello_init,
 	.getattr	= hello_getattr,
 	.readdir	= hello_readdir,
 	.open		= hello_open, //open()
 	.read		= hello_read,//read()
+	.mkdir      = mkdir
 };
 
 static void show_help(const char *progname)

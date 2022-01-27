@@ -196,7 +196,7 @@ int free_data_block(uint64_t id){
 }
 
 /* when to write back is a serious question */
-int read_block(unsigned int block_id,unsigned int offset,unsigned int size,void* buffer){
+/*int read_block(unsigned int block_id,unsigned int offset,unsigned int size,void* buffer){
 	char tmp[BLOCKSIZE];
 
 	if(offset>BLOCKSIZE){
@@ -208,11 +208,87 @@ int read_block(unsigned int block_id,unsigned int offset,unsigned int size,void*
 	memcpy((char*)buffer+offset,tmp,fmin(size,BLOCKSIZE-offset));
 
 	return 0;
+}*/
+
+void write_block(inode* node,uint64_t index,unsigned int size,void* buf){
+	char tmp[BLOCKSIZE];
+	uint64_t* address = (uint64_t*)tmp;
+	if(index<DIRECT_BLOCK){
+		write_disk(node->direct_blocks[index],0,BLOCKSIZE,buf);
+	}
+	else if(index< (DIRECT_BLOCK+SING_INDIR*512) ){
+		read_disk(node->sing_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		write_disk(address[index-DIRECT_BLOCK],0,BLOCKSIZE,buf);
+	}
+	else if(index< (DIRECT_BLOCK+SING_INDIR*512+DOUB_INDIR*512*512)){
+		read_disk(node->doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/512;
+		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
+		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
+		write_disk(address[index],0,BLOCKSIZE,buf);
+	}
+	else{
+		read_disk(node->doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ (512*512);
+		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
+		next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ 512;
+		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
+		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
+		write_disk(address[index],0,BLOCKSIZE,buf);
+	}
 }
 
-
+/* need robust */
+int read_block(inode* node,uint64_t index,unsigned int size,void* buf){
+	char tmp[BLOCKSIZE];
+	uint64_t* address = (uint64_t*)tmp;
+	if(index<DIRECT_BLOCK){
+		if(node->direct_blocks[index]==0)
+			return 0;
+		read_disk(node->direct_blocks[index],0,BLOCKSIZE,buf);
+	}
+	else if(index< (DIRECT_BLOCK+SING_INDIR*512) ){
+		if(node->sing_indirect_blocks[0]==0)
+			return 0;
+		read_disk(node->sing_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		if(address[index-DIRECT_BLOCK]==0)
+			return 0;
+		read_disk(address[index-DIRECT_BLOCK],0,BLOCKSIZE,buf);
+	}
+	else if(index< (DIRECT_BLOCK+SING_INDIR*512+DOUB_INDIR*512*512)){
+		if(node->doub_indirect_blocks[0]==0)
+			return 0;
+		read_disk(node->doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/512;
+		if(address[next_level_index]==0)
+			return 0;
+		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
+		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
+		if(address[index]==0)
+			return 0;
+		read_disk(address[index],0,BLOCKSIZE,buf);
+	}
+	else{
+		if(node->trip_indirect_blocks[0]==0)
+			return 0;
+		read_disk(node->trip_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ (512*512);
+		if(address[next_level_index]==0)
+			return 0;
+		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
+		next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ 512;
+		if(address[next_level_index]==0)
+			return 0;
+		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
+		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
+		if(address[index]==0)
+			return 0;
+		read_disk(address[index],0,BLOCKSIZE,buf);
+	}
+	return 1;
+}
 /* if the actual address (size + offset) exceed what block can hold, then only write part */
-int write_block(unsigned int block_id,unsigned int offset,unsigned int size,void* buffer){
+/*int write_block(unsigned int block_id,unsigned int offset,unsigned int size,void* buffer){
 	char tmp[BLOCKSIZE];
 
 	if(offset>BLOCKSIZE){
@@ -226,7 +302,7 @@ int write_block(unsigned int block_id,unsigned int offset,unsigned int size,void
 	write_disk(block_id,tmp);
 
 	return 0;
-}
+}*/
 
 int main(){
 	char buffer[4096] = "hello world";

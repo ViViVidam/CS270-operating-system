@@ -121,6 +121,7 @@ int SBFS_write(int block_id,uint64_t offset,int64_t size,void* buf){
 	return 0;
 }
 
+/* direcotry is dir, but in each block has to be ended in inode 0 */
 int SBFS_mkdir(char* path, char* filename){
 
 	/* writing into new dir */
@@ -129,16 +130,22 @@ int SBFS_mkdir(char* path, char* filename){
 	uint64_t datablock = allocate_data_block();
 	inode node.direct_blocks[0] = datablock;
 	write_inode(inum,&node,1);
-	
+	char data[BLOCKSIZE];
+
 	dir new_dir;
-	new_dir.inum = 0;
+	new_dir.inum = 0;	
 	SBFS_write(datablock,0,sizeof(dir),&new_dir);
 
+	int parent_inum = SBFS_namei(path);
+	read_inode(parent_inum,&node);
+	SBFS_read(parent_inum,(node->size-sizeof(dir)),&new_dir);
 	strcpy(new_dir.filename,filename);
 	new_dir.inum = inum;
+	SBFS_write(parent_inum,(node->size-sizeof(dir),&new_dir));
+	strcpy(new_dir.filename,"");
+	new_dir.inum = 0;
+	SBFS_write(parent_inum,node->size,&new_dir);
 
-	SBFS_read(path,datablock);
-	SBFS_write(path,datablock);
 	return inum;
 }
 

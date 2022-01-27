@@ -238,32 +238,91 @@ int free_data_block(uint64_t id){
 	return 0;
 }*/
 
-void write_block(inode* node,uint64_t index,void* buf){
+void write_block(uint64_t inum,uint64_t index,void* buf){
+	inode node;
+	read_inode(inum,&node);
 	char tmp[BLOCKSIZE];
+	char zero[BLOCKSIZE];
+	memset(zero,0,BLOCKSIZE);
 	uint64_t* address = (uint64_t*)tmp;
+	int flag = 0;// indicate is there a change in inode
 	if(index<DIRECT_BLOCK){
-		write_disk(node->direct_blocks[index],0,BLOCKSIZE,buf);
+		if(node.direct_blocks[index]==0){
+			node.direct_blocks[index] = allocate_data_block();
+			flag = 1;
+		}
+		write_disk(node.direct_blocks[index],0,BLOCKSIZE,buf);
 	}
 	else if(index< (DIRECT_BLOCK+SING_INDIR*512) ){
+		if(node.sing_indirect_blocks[0]==0){
+			node.sing_indirect_blocks[0] = allocate_data_block();
+			write_disk(node.sing_indirect_blocks[0],zero);
+			flag = 1;
+		}
+		// I/O can be cut down, but I will leave it for now
 		read_disk(node->sing_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		if(node.sing_indirect_blocks[0]==0){
+			node.sing_indirect_blocks = allocate_data_block();
+			flag = 1;
+		}
 		write_disk(address[index-DIRECT_BLOCK],0,BLOCKSIZE,buf);
 	}
 	else if(index< (DIRECT_BLOCK+SING_INDIR*512+DOUB_INDIR*512*512)){
-		read_disk(node->doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		if(node.doub_indirect_blocks[0]==0){
+			node.doub_indirect_blocks[0] = allocate_data_block();
+			write_disk(node.doub_indirect_blocks[0],zero);
+			flag = 1;
+		}
+		read_disk(node.doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
 		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/512;
+		if(address[next_level_index]==0){
+			address[next_level_index] = allocate_data_block();
+			write_disk(address[next_level_index],zero);
+			flag = 1;
+		}
 		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
+		if(address[next_level_index]==0){
+			address[next_level_index] = allocate_data_block();
+			write_disk(address[next_level_index],zero);
+			flag = 1;
+		}
 		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
+		if(address[index]==0){
+			address[index] = allocate_data_block();
+			flag = 1;
+		}
 		write_disk(address[index],0,BLOCKSIZE,buf);
 	}
 	else{
-		read_disk(node->doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		if(node.trip_indirect_blocks[0]==0){
+			node.trip_indirect_blocks[0] = allocate_data_block();
+			write_disk(node.trip_indirect_blocks[0],zero);
+			flag = 1;
+		}
+		read_disk(node.trip_indirect_blocks[0],0,BLOCKSIZE,tmp);
 		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ (512*512);
+		if(address[next_level_index]==0){
+			address[next_level_index] = allocate_data_block();
+			write_disk(address[next_level_index],zero);
+			flag = 1;
+		}
 		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
 		next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ 512;
+		if(address[next_level_index]==0){
+			address[next_level_index] = allocate_data_block();
+			write_disk(address[next_level_index],zero);
+			flag = 1;
+		}
 		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
 		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
+		if(address[index]==0){
+			address[index] = allocate_data_block();
+			flag = 1;
+		}
 		write_disk(address[index],0,BLOCKSIZE,buf);
 	}
+	if(flag==1)
+		write_inode(inum,&node);
 }
 
 /* need robust */

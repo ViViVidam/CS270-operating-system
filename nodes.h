@@ -11,7 +11,7 @@ typedef struct {
 	uint64_t sing_indirect_blocks[SING_INDIR];//88
 	uint64_t doub_indirect_blocks[DOUB_INDIR];//96
 	uint64_t trip_indirect_blocks[TRIP_INDIR];//104
-	uint64_t count;//112
+	uint64_t ending;//112
 	uint64_t flag;//120 this is set to 64bit because of alignment
 } inode;
 

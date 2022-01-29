@@ -382,7 +382,7 @@ int write_block(unsigned int block_id,unsigned int offset,unsigned int size,void
 
 	write_disk(block_id,tmp);
 
-	return 0;
+	return fmin(size,BLOCKSIZE-offset);
 }
 
 int main(){

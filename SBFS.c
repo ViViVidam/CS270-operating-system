@@ -19,13 +19,6 @@
 #define DIR_LENG (BLOCKSIZE/sizeof(dir))
 uint64_t block_id_helper(inode* node,int index,int mode);
 
-
-int get_inode_node(inode* node,uint64_t index,void* buf){
-	if(index<DIRECT_BLOCK){
-		buf = get_inode();
-	}
-}
-
 uint64_t find_file_entry(uint64_t block_id, char* filename){
 	int j = 0;
 	while(read_block(block_id,j++,buf)){
@@ -171,7 +164,7 @@ int SBFS_unlink(char* path){
 	uint64_t inum = SBFS_namei(path);
 	read_inode(inum,&node);
 	int item_count = node->size /sizeof(dir);
-	assert((node->size%sizeof(dir))==0)
+	assert((node->size%sizeof(dir))==0);
 
 	dir entry;
 	int offset = 0;
@@ -205,11 +198,25 @@ int SBFS_init(){
 dir* SBFS_readdir(uint64_t inum){
 	static int i;
 	static int present_inum;
+	static int item_count;
 	static inode node;
 	if(inum!=present_inum){
 		i = 0;
+		present_inum = inum;
 		read_inode(inum,&node);
+		assert(node.type==DIRECTORY);
 	}
+	int item_count = node->size /sizeof(dir);
+	assert((node->size%sizeof(dir))==0);
+
+	dir entry;
+	if (i >= item_count)
+		return NULL;
+	int block_id = i*sizeof(dir)/BLOCKSIZE;
+	int offset = i*sizeof(dir)%BLOCKSIZE;
+	SBFS_read(block_id,offset,sizeof(dir),&entry);
+	i+=1;
+	assert(entry.inum!=0);
 }
 
 uint64_t block_id_helper(inode* node,int index,int mode){

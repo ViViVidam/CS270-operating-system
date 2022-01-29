@@ -8,7 +8,7 @@ int read_disk(uint64_t block_id, void *buffer)
 	char *data = (char *)buffer;
 	if (block_id >= BLOCKCOUNT)
 	{
-		printf("block read: %d exceeded\n");
+		printf("block read: %ld exceeded\n",block_id);
 		return -1;
 	}
 	memcpy(data, dev[block_id], BLOCKSIZE);
@@ -20,7 +20,7 @@ int write_disk(uint64_t block_id, void *buffer)
 	char *data = (char *)buffer;
 	if (block_id >= BLOCKCOUNT)
 	{
-		printf("block write: %d exceeded\n");
+		printf("block write: %ld exceeded\n",block_id);
 		return -1;
 	}
 	memcpy(dev[block_id], data, BLOCKSIZE);

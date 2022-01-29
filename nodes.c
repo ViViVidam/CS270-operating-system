@@ -6,7 +6,7 @@
 
 #define INODE_PER_BLOCK (BLOCKSIZE / (sizeof(inode) / 8))
 
-void cp_inode_length(inode *dest, inode *source)
+void cp_inode(inode *dest, inode *source)
 {
 	uint64_t *dest_alter = (uint64_t *)dest;
 	uint64_t *source_alter = (uint64_t *)source;
@@ -28,7 +28,7 @@ void write_inode(uint64_t inum, inode *node)
 	inode *inodes = (inode *)data;
 
 	/* length is used to escape zero out the memory when allocate inode in user space */
-	cp_inode(&inodes[offset], node, length);
+	cp_inode(&inodes[offset], node);
 	write_disk(block_id, data);
 }
 
@@ -90,13 +90,12 @@ void init_i_list()
 	i_list_block_count = BLOCKCOUNT / 10;
 	for (int i = 1; i <= i_list_block_count; i++)
 	{
-		write_block(i, 0, BLOCKSIZE, tmp);
+		write_disk(i, tmp);
 	}
 }
 
-int mkfs()
+void mkfs()
 {
-	int i = 0;
 	char tmp[BLOCKSIZE];
 
 	memset(tmp, 0, sizeof(tmp));
@@ -128,10 +127,9 @@ void read_inode(uint64_t inum, inode *node)
 	char data[BLOCKSIZE];
 	uint32_t block_id = 1 + inum / INODE_PER_BLOCK;
 	uint32_t offset = inum % INODE_PER_BLOCK;
-	inode node_tmp;
 	read_disk(block_id, data);
-	inode *inodes = (*inode)data;
-	cp_inode(node, &inodes[offset], DIRECT_BLOCK + SING_INDIR + DOUB_INDIR + TRIP_INDIR);
+	inode *inodes = (inode*) data;
+	cp_inode(node, &inodes[offset]);
 }
 
 /* zero for failure */
@@ -139,10 +137,10 @@ uint64_t allocate_inode()
 {
 	char tmp[BLOCKSIZE];
 	int i, j, flag, block_id;
-	inode *inode_block = (*uint64_t)tmp;
+	inode *inode_block = (inode*) tmp;
 	for (i = 1; i <= i_list_block_count; i++)
 	{
-		read_disk(i, 0, BLOCKSIZE, tmp);
+		read_disk(i, tmp);
 		for (j = 0; j < INODE_PER_BLOCK; j++)
 		{
 			if (inode_block[j].flag == 0)
@@ -156,7 +154,7 @@ uint64_t allocate_inode()
 	{
 		block_id = (i - 1) * INODE_PER_BLOCK + j;
 		inode_block[j].flag = 1;
-		write_disk(i, 0, BLOCKSIZE, tmp);
+		write_disk(i,tmp);
 	}
 	else
 		block_id = -1;
@@ -170,7 +168,7 @@ int free_inode(uint64_t inum)
 	inode tmp;
 	if (block_id > i_list_block_count)
 	{
-		printf("block_id too big %d \n", inum);
+		printf("block_id too big %ld \n", inum);
 		return -1;
 	}
 	read_block(block_id, sizeof(inode) * offset, sizeof(inode), &tmp);
@@ -222,15 +220,15 @@ uint64_t allocate_data_block()
 	{
 		res = data[i];
 		data[i] = 0;
-		write_disk(head, 0, BLOCKSIZE, tmp);
+		write_disk(head, tmp);
 	}
 	else
 	{
 		res = head;
 		head = data[0];
 		data[0] = 0;
-		write_disk(0, 0, sizeof(uint64_t), &head);
-		write_disk(res, 0, BLOCKSIZE, tmp);
+		write_block(0, 0, sizeof(uint64_t), &head);
+		write_disk(res, tmp);
 	}
 	return res;
 }
@@ -252,9 +250,7 @@ int free_data_block(uint64_t id)
 	}
 
 	if (flag == 1)
-	{
-		write_block(head, 0, BLOCKSIZE, tmp);
-	}
+		write_disk(head, tmp);
 	else
 	{
 		int pre_head = head;
@@ -271,7 +267,7 @@ int read_block(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer)
 
 	if (offset > BLOCKSIZE)
 	{
-		printf("offset %d in write_disk greate than BLOCKSIZE\n", offset);
+		printf("offset %ld in write_disk greate than BLOCKSIZE\n", offset);
 		return -1;
 	}
 
@@ -287,7 +283,7 @@ int write_block(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer)
 
 	if (offset > BLOCKSIZE)
 	{
-		printf("boundary exceeded %d in write_disk greate than BLOCKSIZE\n", offset);
+		printf("boundary exceeded %ld in write_disk greate than BLOCKSIZE\n", offset);
 		return -1;
 	}
 
@@ -310,131 +306,3 @@ int main()
 	return 0;
 }
 /* size is for computation convinent */
-/*void write_block(uint64_t inum,uint64_t index,void* buf,uint64_t size){
-	inode node;
-	read_inode(inum,&node);
-	char tmp[BLOCKSIZE];
-	char zero[BLOCKSIZE];
-	memset(zero,0,BLOCKSIZE);
-	uint64_t* address = (uint64_t*)tmp;
-	int flag = 0;// indicate is there a change in inode
-	if(index<DIRECT_BLOCK){
-		if(node.direct_blocks[index]==0){
-			node.direct_blocks[index] = allocate_data_block();
-		}
-		write_disk(node.direct_blocks[index],0,BLOCKSIZE,buf);
-	}
-	else if(index< (DIRECT_BLOCK+SING_INDIR*512) ){
-		if(node.sing_indirect_blocks[0]==0){
-			node.sing_indirect_blocks[0] = allocate_data_block();
-			write_disk(node.sing_indirect_blocks[0],zero);
-		}
-		// I/O can be cut down, but I will leave it for now
-		read_disk(node->sing_indirect_blocks[0],0,BLOCKSIZE,tmp);
-		if(node.sing_indirect_blocks[0]==0){
-			node.sing_indirect_blocks = allocate_data_block();
-		}
-		write_disk(address[index-DIRECT_BLOCK],0,BLOCKSIZE,buf);
-	}
-	else if(index< (DIRECT_BLOCK+SING_INDIR*512+DOUB_INDIR*512*512)){
-		if(node.doub_indirect_blocks[0]==0){
-			node.doub_indirect_blocks[0] = allocate_data_block();
-			write_disk(node.doub_indirect_blocks[0],zero);
-		}
-		read_disk(node.doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
-		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/512;
-		if(address[next_level_index]==0){
-			address[next_level_index] = allocate_data_block();
-			write_disk(address[next_level_index],zero);
-		}
-		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
-		if(address[next_level_index]==0){
-			address[next_level_index] = allocate_data_block();
-			write_disk(address[next_level_index],zero);
-		}
-		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
-		if(address[index]==0){
-			address[index] = allocate_data_block();
-		}
-		write_disk(address[index],0,BLOCKSIZE,buf);
-	}
-	else{
-		if(node.trip_indirect_blocks[0]==0){
-			node.trip_indirect_blocks[0] = allocate_data_block();
-			write_disk(node.trip_indirect_blocks[0],zero);
-		}
-		read_disk(node.trip_indirect_blocks[0],0,BLOCKSIZE,tmp);
-		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ (512*512);
-		if(address[next_level_index]==0){
-			address[next_level_index] = allocate_data_block();
-			write_disk(address[next_level_index],zero);
-		}
-		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
-		next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ 512;
-		if(address[next_level_index]==0){
-			address[next_level_index] = allocate_data_block();
-			write_disk(address[next_level_index],zero);
-		}
-		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
-		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
-		if(address[index]==0){
-			address[index] = allocate_data_block();
-		}
-		write_disk(address[index],0,BLOCKSIZE,buf);
-	}
-	node->size += size;
-	write_inode(inum,&node);
-}*/
-
-/* need robust */
-/*int read_block(uint64_t inum,uint64_t index,void* buf){
-	inode node;
-	read_inode(inum,&node);
-	char tmp[BLOCKSIZE];
-	uint64_t* address = (uint64_t*)tmp;
-	if(index<DIRECT_BLOCK){
-		if(node.direct_blocks[index]==0)
-			return 0;
-		read_disk(node.direct_blocks[index],0,BLOCKSIZE,buf);
-	}
-	else if(index< (DIRECT_BLOCK+SING_INDIR*512) ){
-		if(node.sing_indirect_blocks[0]==0)
-			return 0;
-		read_disk(node.sing_indirect_blocks[0],0,BLOCKSIZE,tmp);
-		if(address[index-DIRECT_BLOCK]==0)
-			return 0;
-		read_disk(address[index-DIRECT_BLOCK],0,BLOCKSIZE,buf);
-	}
-	else if(index< (DIRECT_BLOCK+SING_INDIR*512+DOUB_INDIR*512*512)){
-		if(node.doub_indirect_blocks[0]==0)
-			return 0;
-		read_disk(node.doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
-		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/512;
-		if(address[next_level_index]==0)
-			return 0;
-		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
-		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
-		if(address[index]==0)
-			return 0;
-		read_disk(address[index],0,BLOCKSIZE,buf);
-	}
-	else{
-		if(node.trip_indirect_blocks[0]==0)
-			return 0;
-		read_disk(node.trip_indirect_blocks[0],0,BLOCKSIZE,tmp);
-		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ (512*512);
-		if(address[next_level_index]==0)
-			return 0;
-		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
-		next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ 512;
-		if(address[next_level_index]==0)
-			return 0;
-		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
-		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
-		if(address[index]==0)
-			return 0;
-		read_disk(address[index],0,BLOCKSIZE,buf);
-	}
-	return 1;
-}*/
-/* if the actual address (size + offset) exceed what block can hold, then only write part */

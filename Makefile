@@ -1,14 +1,14 @@
 CC = gcc
 
-#makenode:
-#	$(CC) -Wall nodes.c disk.c -o nodes -lm
-#	./nodes
-#	rm nodes
+makenode:
+	$(CC) -Wall SBFS.c nodes.c disk.c -o SBFS -lm
+	./SBFS
+	rm SBFS
 
-makefuse:
-	$(CC) -Wall main.c `pkg-config fuse3 --cflags --libs` -o main
-	./main -f mount 
-	rm main
+#makefuse:
+#	$(CC) -Wall main.c `pkg-config fuse3 --cflags --libs` -o main
+#	./main -f mount
+#	rm main
 
 clean:
 	rm main

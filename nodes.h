@@ -1,12 +1,11 @@
 #include "disk.h"
 #include <stdint.h>
+
 #define BLOCKADDR 8
 #define DIRECT_BLOCK 10
 #define SING_INDIR 1
 #define DOUB_INDIR 1
 #define TRIP_INDIR 1
-#define FILE 1
-#define DIRECTORY 2
 #define ROOT 0
 //assert
 typedef struct { 
@@ -28,12 +27,11 @@ int write_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);
 int read_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);
 
 
-void get_inode(uint64_t inum,inode* node);
+void read_inode(uint64_t inum,inode* node);
 void write_inode(uint64_t inum,inode* node);
 
 int free_data_block(uint64_t id);
 int free_inode(uint64_t inum);
 uint64_t allocate_inode();
 uint64_t allocate_data_block();
-
-int mkfs();
+void mkfs();

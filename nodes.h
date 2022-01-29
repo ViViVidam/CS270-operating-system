@@ -21,16 +21,18 @@ typedef struct {
 } inode;
 
 static uint64_t head = 0;
-static uint64_t i_list_size = 0;
+static uint64_t i_list_block_count = 0;
 
 int write_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);
 int read_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);
 
 
-void get_inode(uint64_t inum,inode* node)
+void get_inode(uint64_t inum,inode* node);
 void write_inode(uint64_t inum,inode* node);
 
-int free_data_block(int id);
+int free_data_block(uint64_t id);
 int free_inode(uint64_t inum);
 uint64_t allocate_inode();
 uint64_t allocate_data_block();
+
+int mkfs();

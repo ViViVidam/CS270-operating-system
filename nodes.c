@@ -1,4 +1,3 @@
-#include "disk.h"
 #include <stdio.h>
 #include <string.h>
 #include "nodes.h"
@@ -36,8 +35,8 @@ void write_inode(uint64_t inum, inode *node)
 void init_free_disk(int start)
 {
 	char data[BLOCKSIZE];
-	int total_per_block = BLOCKSIZE / BLOCKADDR;
-	int record_block_count = (BLOCKCOUNT - INODES - 1) / total_per_block;
+	int block_entries_per_block = BLOCKSIZE / BLOCKADDR; // num of addr of block per block
+	int record_block_count = (BLOCKCOUNT - i_list_block_count - 1) / block_entries_per_block;
 	uint64_t *datablock = (uint64_t *)data;
 	int block_id = start;
 
@@ -46,8 +45,8 @@ void init_free_disk(int start)
 	while (record_block_count--)
 	{
 		block_id = start;
-		memset(data, 0, BLOCKSIZE);
-		for (int i = 1; i < total_per_block; i++)
+		//memset(data, 0, BLOCKSIZE);
+		for (int i = 1; i < block_entries_per_block; i++)
 		{
 			start++;
 			datablock[i] = start + 1;
@@ -57,11 +56,11 @@ void init_free_disk(int start)
 		write_disk(block_id, datablock);
 	}
 
-	if ((BLOCKCOUNT - INODES - 1) % total_per_block != 0)
+	if ((BLOCKCOUNT - i_list_block_count - 1) % block_entries_per_block != 0)
 	{
 		int block_id = start;
 		memset(data, 0, BLOCKSIZE);
-		for (int i = 1; i < total_per_block; i++)
+		for (int i = 1; i < block_entries_per_block; i++)
 		{
 			start++;
 
@@ -110,8 +109,8 @@ int mkfs()
 	int start = i_list_block_count + 1;
 	//start of block
 	supernode[0] = start;
-	supernode[1] = i_list_block_count; //inode block count 
-	//supernode[1] = i_list_block_count * BLOCKSIZE / ((sizeof(inode)/8)); //inode count 
+	supernode[1] = i_list_block_count; //inode block count
+	//supernode[1] = i_list_block_count * BLOCKSIZE / ((sizeof(inode)/8)); //inode count
 	supernode[2] = BLOCKSIZE;
 	supernode[3] = 1; //init flag
 	write_disk(0, tmp);
@@ -282,7 +281,7 @@ int read_block(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer)
 	return fmin(size, BLOCKSIZE - offset);
 }
 
-int write_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer)
+int write_block(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer)
 {
 	char tmp[BLOCKSIZE];
 

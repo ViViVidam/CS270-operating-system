@@ -1,3 +1,4 @@
+#include "disk.h"
 #include <stdint.h>
 #define BLOCKADDR 8
 #define DIRECT_BLOCK 10

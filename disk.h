@@ -3,5 +3,5 @@
 #define BLOCKCOUNT  100
 
 static uint8_t dev[BLOCKCOUNT][BLOCKSIZE];
-int write_disk(unsigned int block_id,void* buffer);
-int read_disk(unsigned int block_id,void* buffer);
+int write_disk(uint64_t block_id,void* buffer);
+int read_disk(uint64_t block_id,void* buffer);

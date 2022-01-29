@@ -1,4 +1,5 @@
 #define MAX_FILENAME 64
+#define EOF -1;
 int SBFS_open(char*,int flag);
 int SBFS_close(int fd);
 int SBFS_mkdir();

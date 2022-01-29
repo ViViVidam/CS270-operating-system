@@ -13,7 +13,9 @@ void cp_inode_length(inode* dest,inode* source,int length){
 	for(int i = 0; i < fmin(length,(DIRECT_BLOCK+SING_INDIR+DOUB_INDIR+TRIP_INDIR) );i++){
 		dest_alter[i] = source_alter[i];
 	}
-	dest->flag = 1;
+	dest->flag = source->flag;
+	dest->type = source->type;
+	dest->size = source->size;
 }
 
 void write_inode(uint64_t inum,inode* node,int length){
@@ -22,7 +24,6 @@ void write_inode(uint64_t inum,inode* node,int length){
 	uint64_t offset = inum % INODE_PER_BLOCK;
 	read_disk(block_id,data);
 	inode* inodes = (inode*) data;
-	assert(node->flag==1);
 
 	/* length is used to escape zero out the memory when allocate inode in user space */
 	cp_inode(&inodes[offset],node,length);
@@ -116,7 +117,7 @@ void read_inode(uint64_t inum,inode* node){
 }
 
 /* zero for failure */
-int allocate_inode(){
+uint64_t allocate_inode(){
 	char tmp[BLOCKSIZE];
 	int i,j,flag;
 	inode* inode_block = (*uint64_t) tmp;
@@ -166,7 +167,8 @@ int free_inode(uint64_t inum){
 		tmp.trip_indirect_blocks[i] = 0;
 	}
 	tmp.flag = 0;
-
+	tmp.size = 0;
+	tmp.type = 0;
 	write_block(block_id,sizeof(inode)*offset,sizeof(inode),&tmp);
 
 	return 0;
@@ -224,7 +226,7 @@ int free_data_block(uint64_t id){
 }
 
 /* when to write back is a serious question */
-/*int read_block(unsigned int block_id,unsigned int offset,unsigned int size,void* buffer){
+int read_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer){
 	char tmp[BLOCKSIZE];
 
 	if(offset>BLOCKSIZE){
@@ -236,10 +238,10 @@ int free_data_block(uint64_t id){
 	memcpy((char*)buffer+offset,tmp,fmin(size,BLOCKSIZE-offset));
 
 	return 0;
-}*/
+}
 
 /* size is for computation convinent */
-void write_block(uint64_t inum,uint64_t index,void* buf,uint64_t size){
+/*void write_block(uint64_t inum,uint64_t index,void* buf,uint64_t size){
 	inode node;
 	read_inode(inum,&node);
 	char tmp[BLOCKSIZE];
@@ -313,10 +315,10 @@ void write_block(uint64_t inum,uint64_t index,void* buf,uint64_t size){
 	}
 	node->size += size;
 	write_inode(inum,&node);
-}
+}*/
 
 /* need robust */
-int read_block(uint64_t inum,uint64_t index,void* buf){
+/*int read_block(uint64_t inum,uint64_t index,void* buf){
 	inode node;
 	read_inode(inum,&node);
 	char tmp[BLOCKSIZE];
@@ -365,13 +367,13 @@ int read_block(uint64_t inum,uint64_t index,void* buf){
 		read_disk(address[index],0,BLOCKSIZE,buf);
 	}
 	return 1;
-}
+}*/
 /* if the actual address (size + offset) exceed what block can hold, then only write part */
-/*int write_block(unsigned int block_id,unsigned int offset,unsigned int size,void* buffer){
+int write_block(unsigned int block_id,unsigned int offset,unsigned int size,void* buffer){
 	char tmp[BLOCKSIZE];
 
 	if(offset>BLOCKSIZE){
-		printf("offset %d in write_disk greate than BLOCKSIZE\n",offset);
+		printf("boundary exceeded %d in write_disk greate than BLOCKSIZE\n",offset);
 		return -1;
 	}
 
@@ -381,7 +383,7 @@ int read_block(uint64_t inum,uint64_t index,void* buf){
 	write_disk(block_id,tmp);
 
 	return 0;
-}*/
+}
 
 int main(){
 	char buffer[4096] = "hello world";

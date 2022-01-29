@@ -7,10 +7,14 @@
 #define MAX_OPEN 100
 #define DIR 0
 #define FILE 1
+#define H_CREATE 1
+#define H_READ 2
+
 #define MIN(a,b) ((a>b)?b:a)
 typedef struct{
 	char filename[MAX_FILENAME];
 	uint64_t inum;
+	uint8_t valid;
 } dir;
 
 
@@ -93,29 +97,118 @@ int SBFS_read(uint64_t block_id,uint64_t offset,int64_t size,void* buf){
 	}
 	return 0;
 }
+/* mode H_READ, don't create new block,mode H_CREATE create new block */
+uint64_t block_id_helper(inode* node,int index,int mode){
+	char tmp[BLOCKSIZE];
+	char zero[BLOCKSIZE];
+	memset(zero,0,BLOCKSIZE);
+	uint64_t* address = (uint64_t*)tmp;
+	int flag = 0;// indicate is there a change in inode
+	if(index<DIRECT_BLOCK){
+		if(node->direct_blocks[index]==0 && mode==H_CREATE){
+			node->direct_blocks[index] = allocate_data_block();
+		}
+		return node->direct_blocks[index];
+	}
+	else if(index< (DIRECT_BLOCK+SING_INDIR*512) ){
+		if(node->sing_indirect_blocks[0]==0 && mode==H_CREATE){
+			if(mode == H_CREATE){
+				node->sing_indirect_blocks[0] = allocate_data_block();
+				write_block(node->sing_indirect_blocks[0],0,BLOCKSIZE,zero);
+			}
+			else
+				return 0;
+		}
+		// I/O can be cut down, but I will leave it for now
+		read_disk(node->sing_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		if(address[index-DIRECT_BLOCK]==0 && mode==H_CREATE){
+			address = allocate_data_block();
+			write_block(node->sing_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		}
+		return address[index-DIRECT_BLOCK];
+	}
+	else if(index< (DIRECT_BLOCK+SING_INDIR*512+DOUB_INDIR*512*512)){
+		if(node->doub_indirect_blocks[0]==0){
+			if(mode == H_CREATE){
+				node->doub_indirect_blocks[0] = allocate_data_block();
+				write_block(node->doub_indirect_blocks[0],0,BLOCKSIZE,zero);
+			}
+			else
+				return 0;
+		}
+		read_disk(node->doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/512;
+		if(address[next_level_index]==0){
+			if(mode == H_CREATE){
+				address[next_level_index] = allocate_data_block();
+				write_block(node->doub_indirect_blocks[0],0,BLOCKSIZE,tmp);
+				write_block(address[next_level_index],0,BLOCKSIZE,zero);
+			}
+			else
+				return 0;
+		}
+		int parent_id = address[next_level_index];
+		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
+		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
+		if(address[index]==0 && mode==H_CREATE){
+			address[index] = allocate_data_block();
+			write_block(parent_id,0,BLOCKSIZE,tmp);
+		}
+		return address[index];
+	}
+	else{
+		if(node->trip_indirect_blocks[0]==0){
+			if(mode == H_CREATE){
+				node->trip_indirect_blocks[0] = allocate_data_block();
+				write_block(node.trip_indirect_blocks[0],0,BLOCKSIZE,zero);
+			}
+			else
+				return 0;
+		}
+		read_disk(node->trip_indirect_blocks[0],0,BLOCKSIZE,tmp);
+		int next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ (512*512);
+		if(address[next_level_index]==0){
+			address[next_level_index] = allocate_data_block();
+			write_block(address[next_level_index],0,BLOCKSIZE,zero);
+			write_block(node->trip_indirect_blocks[0].0.BLOCKSIZE,tmp);
+		}
+		int parent_id = address[next_level_index];
+		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
+		next_level_index = (index - DIRECT_BLOCK - SING_INDIR*512)/ 512;
+		if(address[next_level_index]==0){
+			address[next_level_index] = allocate_data_block();
+			write_block(address[next_level_index],0,BLOCKSIZE,zero);
+			write_block(parent_id,0,BLOCKSIZE,tmp);
+		}
+		read_disk(address[next_level_index],0,BLOCKSIZE,tmp);
+		index = (index - DIRECT_BLOCK - SING_INDIR*512)%512;
+		if(address[index]==0){
+			address[index] = allocate_data_block();
+		}
+		write_disk(address[index],0,BLOCKSIZE,buf);
+	}
+	node->size += size;
+	write_inode(inum,&node);
+}
 
 int SBFS_write(int inum,uint64_t offset,int64_t size,void* buf){
 	char* buffer = (char*) buf;
-	char data[BLOCKSIZE];
+	inode node;
+	read_inode(inum,&node);
 
 	assert(inum>i_list_size);
 	int start = offset / BLOCKSIZE;
 	uint64_t block_offset = offset % BLOCKSIZE;	
-	
-	assert(offset<BLOCKSIZE);
+	assert(block_offset<BLOCKSIZE);
+
 	while(size>0){
-		if(read_block(inum,start,data)){
-			int cp_size = MIN(size,BLOCKSIZE-offset);
-			memcpy(data+offset,buffer,cp_size);
-			buffer += cp_size;
-			size -= cp_size;
-			write_block(block_id,start,data,size);
-			start += 1;
-		}
-		else{
-			printf("SBFS_read encountered zero in read_block %d\n",start);
-			return -1;
-		}
+		block_id_helper(&node,start);
+		int cp_size = MIN(size,BLOCKSIZE-offset);
+		memcpy(data+offset,buffer,cp_size);
+		buffer += cp_size;
+		size -= cp_size;
+		write_block(block_id,block_offset,size,buf);
+		start += 1;
 	}
 	return 0;
 }
@@ -137,18 +230,54 @@ int SBFS_mkdir(char* path, char* filename){
 
 	int parent_inum = SBFS_namei(path);
 	read_inode(parent_inum,&node);
-	SBFS_read(parent_inum,(node->size-sizeof(dir)),&new_dir);
+	SBFS_read(parent_inum,(node.size-sizeof(dir)),&new_dir);
 	strcpy(new_dir.filename,filename);
 	new_dir.inum = inum;
-	SBFS_write(parent_inum,(node->size-sizeof(dir),&new_dir));
+	SBFS_write(parent_inum,(node.size-sizeof(dir)),&new_dir);
 	strcpy(new_dir.filename,"");
 	new_dir.inum = 0;
-	SBFS_write(parent_inum,node->size,&new_dir);
+	SBFS_write(parent_inum,node.size,&new_dir);
 
 	return inum;
 }
 
+int SBFS_mknod(char* path,char* filename){
+	uint64_t inum = allocate_inode();
+	int parent_inum = SBFS_namei(path);
+	dir new_dir;
+	SBFS_read(parent_inum,(node.size-sizeof(dir)),&new_dir);
+	strcpy(new_dir.filename,filename);
+	new_dir.inum = inum;
+	SBFS_write(parent_inum,(node.size-sizeof(dir)),&new_dir);
+	new_dir.inum = 0;
+	SBFS_write(parent_inum,node.size,&new_dir);
+	return inum;
+}
 
+int SBFS_unlink(char* path){
+	inode node;
+	uint64_t inum = SBFS_namei(path);
+	read_inode(inum,&node);
+	char data[BLOCKSIZE];
+	dir* dirs = (dir*) data;
+	int offset = 0;
+	if(node->type == DIRECTORY){
+		while(SBFS_read(inum,offset,50*sizeof(dir),data)!=EOF){
+			for(int i=0;i<50;i++){
+				if(dirs[i].inum==0)
+					break;
+				if(dirs[i].valid==1)
+					free_inode(inum);
+			}
+		}
+	}
+	free_inode(inum);
+	return 0;
+}
+
+int SBFS_close(int node){
+	return 0;
+}
 
 uint64_t SBFS_open(char* filename,int mode){
 	uint64_t inode = SBFS_namei(filename);
@@ -157,4 +286,9 @@ uint64_t SBFS_open(char* filename,int mode){
 
 int SBFS_init(){
 	mkfs();
+}
+
+
+void SBFS_readdir(){
+
 }

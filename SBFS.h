@@ -1,5 +1,11 @@
 #define MAX_FILENAME 64
 #define EOF -1;
+typedef struct{
+	char filename[MAX_FILENAME];
+	uint64_t inum;
+	//uint8_t valid;
+} dir;
+
 int SBFS_open(char*,int flag);
 int SBFS_close(int fd);
 int SBFS_mkdir();

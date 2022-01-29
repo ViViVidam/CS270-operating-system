@@ -7,10 +7,10 @@
 
 #define INODE_PER_BLOCK (BLOCKSIZE/(sizeof(inode)/8))
 
-void cp_inode_length(inode* dest,inode* source,int length){
+void cp_inode_length(inode* dest,inode* source){
 	uint64_t* dest_alter = (uint64_t*) dest;
 	uint64_t* source_alter = (uint64_t*) source;
-	for(int i = 0; i < fmin(length,(DIRECT_BLOCK+SING_INDIR+DOUB_INDIR+TRIP_INDIR) );i++){
+	for(int i = 0; i < (DIRECT_BLOCK+SING_INDIR+DOUB_INDIR+TRIP_INDIR);i++){
 		dest_alter[i] = source_alter[i];
 	}
 	dest->flag = source->flag;
@@ -18,7 +18,7 @@ void cp_inode_length(inode* dest,inode* source,int length){
 	dest->size = source->size;
 }
 
-void write_inode(uint64_t inum,inode* node,int length){
+void write_inode(uint64_t inum,inode* node){
 	char data[BLOCKSIZE];
 	uint64_t block_id = inum / INODE_PER_BLOCK + 1;
 	uint64_t offset = inum % INODE_PER_BLOCK;

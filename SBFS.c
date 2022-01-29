@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdint.h>
+
 
 #define MAX_OPEN 100
 #define DIR 0
@@ -11,11 +13,7 @@
 #define H_READ 2
 
 #define MIN(a,b) ((a>b)?b:a)
-typedef struct{
-	char filename[MAX_FILENAME];
-	uint64_t inum;
-	uint8_t valid;
-} dir;
+#define MAX(a,b) ((a>b)?a:b)
 
 
 #define DIR_LENG (BLOCKSIZE/sizeof(dir))
@@ -71,6 +69,7 @@ uint64_t SBFS_namei(char* path){
 }
 
 int SBFS_read(uint64_t block_id,uint64_t offset,int64_t size,void* buf){
+	char* buffer = (char*) buf;
 	inode node;
 	read_inode(inum,&node);
 
@@ -79,16 +78,17 @@ int SBFS_read(uint64_t block_id,uint64_t offset,int64_t size,void* buf){
 	uint64_t block_offset = offset % BLOCKSIZE;	
 	assert(block_offset<BLOCKSIZE);
 
-	int write_bytes -= write_block(start,block_offset,size,buf);
-	size -= write_bytes;
-	buf += write_bytes;
+	int read_bytes = read_block(start,block_offset,size,buf);
+	size -= read_bytes;
+	buffer += read_bytes;
 
 	while(size>0){
-		start += 1
+		start += 1;
 		int block_id = block_id_helper(&node,start,H_CREATE);
-		write_bytes = write_block(block_id,block_offset,size,buf);
-		buffer += write_bytes;
-		size -= write_bytes;
+		assert(block_id!=0);
+		read_bytes = read_block(block_id,block_offset,size,buf);
+		buffer += read_bytes;
+		size -= read_bytes;
 	}
 	return 0;
 }
@@ -98,15 +98,16 @@ int SBFS_read(uint64_t block_id,uint64_t offset,int64_t size,void* buf){
 int SBFS_write(int inum,uint64_t offset,int64_t size,void* buf){
 	inode node;
 	read_inode(inum,&node);
+	char* buffer = (char*) buf;
 
 	assert(inum>i_list_size);
 	int start = offset / BLOCKSIZE;
 	uint64_t block_offset = offset % BLOCKSIZE;	
 	assert(block_offset<BLOCKSIZE);
 
-	int write_bytes -= write_block(start,block_offset,size,buf);
+	int write_bytes = write_block(start,block_offset,size,buf);
 	size -= write_bytes;
-	buf += write_bytes;
+	buffer += write_bytes;
 
 	while(size>0){
 		start += 1
@@ -115,20 +116,22 @@ int SBFS_write(int inum,uint64_t offset,int64_t size,void* buf){
 		buffer += write_bytes;
 		size -= write_bytes;
 	}
+	node->size = MAX(node->size,offset+size);
+	write_inode(inum,&node);
 	return 0;
 }
 
-/* direcotry is dir, but in each block has to be ended in inode 0 */
-int SBFS_mkdir(char* path, char* filename){
+/* direcotry is dir, the item is empty when inode = 0 */
+uint64_t SBFS_mkdir(char* filename,inode* node){
 
 	/* writing into new dir */
 	uint64_t inum = allocate_inode();
-	inode node;//no need to set node.flag = 1;
-	uint64_t datablock = allocate_data_block();
-	inode node.direct_blocks[0] = datablock;
-	write_inode(inum,&node,1);
-	char data[BLOCKSIZE];
+	memset(node,0,sizeof(inode));
+	node->type = DIRECTORY;
+	node->size = 0;
+	node->flag = 1;
 
+	/*
 	dir new_dir;
 	new_dir.inum = 0;	
 	SBFS_write(datablock,0,sizeof(dir),&new_dir);
@@ -141,21 +144,25 @@ int SBFS_mkdir(char* path, char* filename){
 	SBFS_write(parent_inum,(node.size-sizeof(dir)),&new_dir);
 	strcpy(new_dir.filename,"");
 	new_dir.inum = 0;
-	SBFS_write(parent_inum,node.size,&new_dir);
+	SBFS_write(parent_inum,node.size,&new_dir);*/
 
 	return inum;
 }
 
-int SBFS_mknod(char* path,char* filename){
+uint64_t SBFS_mknod(char* filename,inode* node){
 	uint64_t inum = allocate_inode();
-	int parent_inum = SBFS_namei(path);
+	memset(node,0,sizeof(inode));
+	node->type = FILE;
+	node->size = 0;
+	node->flag = 1;
+	/*int parent_inum = SBFS_namei(path);
 	dir new_dir;
 	SBFS_read(parent_inum,(node.size-sizeof(dir)),&new_dir);
 	strcpy(new_dir.filename,filename);
 	new_dir.inum = inum;
 	SBFS_write(parent_inum,(node.size-sizeof(dir)),&new_dir);
 	new_dir.inum = 0;
-	SBFS_write(parent_inum,node.size,&new_dir);
+	SBFS_write(parent_inum,node.size,&new_dir);*/
 	return inum;
 }
 
@@ -163,17 +170,18 @@ int SBFS_unlink(char* path){
 	inode node;
 	uint64_t inum = SBFS_namei(path);
 	read_inode(inum,&node);
-	char data[BLOCKSIZE];
-	dir* dirs = (dir*) data;
+	int item_count = node->size /sizeof(dir);
+	assert((node->size%sizeof(dir))==0)
+
+	dir entry;
 	int offset = 0;
 	if(node->type == DIRECTORY){
-		while(SBFS_read(inum,offset,50*sizeof(dir),data)!=EOF){
-			for(int i=0;i<50;i++){
-				if(dirs[i].inum==0)
-					break;
-				if(dirs[i].valid==1)
-					free_inode(inum);
-			}
+		for(int i = 0;i<item_count;i++){
+			int block_id = i*sizeof(dir)/BLOCKSIZE;
+			int offset = i*sizeof(dir)%BLOCKSIZE;
+			SBFS_read(block_id,offset,sizeof(dir),&entry);
+			assert(entry.inum!=0);
+			free_inode(entry.inum);
 		}
 	}
 	free_inode(inum);
@@ -194,8 +202,14 @@ int SBFS_init(){
 }
 
 
-void SBFS_readdir(){
-
+dir* SBFS_readdir(uint64_t inum){
+	static int i;
+	static int present_inum;
+	static inode node;
+	if(inum!=present_inum){
+		i = 0;
+		read_inode(inum,&node);
+	}
 }
 
 uint64_t block_id_helper(inode* node,int index,int mode){
@@ -297,5 +311,4 @@ uint64_t block_id_helper(inode* node,int index,int mode){
 		}
 		return address[index];
 	}
-	write_inode(inum,node);
 }

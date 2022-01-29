@@ -4,16 +4,29 @@
 #include <math.h>
 #include <assert.h>
 
-#define INODE_PER_BLOCK (BLOCKSIZE / (sizeof(inode) / 8))
+#define INODE_PER_BLOCK (BLOCKSIZE / sizeof(inode))
+
+static uint64_t head = 0;
+static uint64_t i_list_block_count = 0;
+
+uint64_t read_head(){
+    return head;
+}
 
 void cp_inode(inode *dest, inode *source)
 {
-	uint64_t *dest_alter = (uint64_t *)dest;
-	uint64_t *source_alter = (uint64_t *)source;
-	for (int i = 0; i < (DIRECT_BLOCK + SING_INDIR + DOUB_INDIR + TRIP_INDIR); i++)
-	{
-		dest_alter[i] = source_alter[i];
+	for (int i = 0; i < (DIRECT_BLOCK);i++){
+		dest->direct_blocks[i] = source->direct_blocks[i];
 	}
+    for (int i = 0; i < (SING_INDIR);i++){
+        dest->sing_indirect_blocks[i] = source->sing_indirect_blocks[i];
+    }
+    for (int i = 0; i < (DOUB_INDIR);i++){
+        dest->doub_indirect_blocks[i] = source->doub_indirect_blocks[i];
+    }
+    for (int i = 0; i < (TRIP_INDIR);i++){
+        dest->trip_indirect_blocks[i] = source->trip_indirect_blocks[i];
+    }
 	dest->flag = source->flag;
 	dest->type = source->type;
 	dest->size = source->size;
@@ -22,6 +35,7 @@ void cp_inode(inode *dest, inode *source)
 void write_inode(uint64_t inum, inode *node)
 {
 	char data[BLOCKSIZE];
+    //printf("write %ld %ld %ld\n",node->size,node->sing_indirect_blocks[0],node->flag);
 	uint64_t block_id = inum / INODE_PER_BLOCK + 1;
 	uint64_t offset = inum % INODE_PER_BLOCK;
 	read_disk(block_id, data);
@@ -35,6 +49,7 @@ void write_inode(uint64_t inum, inode *node)
 void init_free_disk(int start)
 {
 	char data[BLOCKSIZE];
+    char test[BLOCKSIZE];
 	int block_entries_per_block = BLOCKSIZE / BLOCKADDR; // num of addr of block per block
 	int record_block_count = (BLOCKCOUNT - i_list_block_count - 1) / block_entries_per_block;
 	uint64_t *datablock = (uint64_t *)data;
@@ -45,15 +60,21 @@ void init_free_disk(int start)
 	while (record_block_count--)
 	{
 		block_id = start;
-		//memset(data, 0, BLOCKSIZE);
 		for (int i = 1; i < block_entries_per_block; i++)
 		{
 			start++;
-			datablock[i] = start + 1;
+			datablock[i] = start;
 		}
 		start++;
 		datablock[0] = start;
 		write_disk(block_id, datablock);
+        read_disk(block_id,test);
+        uint64_t * test_block = (uint64_t*) test;
+        printf("block id %d:\n",block_id);
+        for(int j = 0;j<(BLOCKSIZE/BLOCKADDR);j++){
+            printf("%ld ",test_block[j]);
+        }
+        printf("\n");
 	}
 
 	if ((BLOCKCOUNT - i_list_block_count - 1) % block_entries_per_block != 0)
@@ -63,23 +84,32 @@ void init_free_disk(int start)
 		for (int i = 1; i < block_entries_per_block; i++)
 		{
 			start++;
-
 			if (start > (BLOCKCOUNT - 1))
-			{
 				datablock[i] = 0;
-			}
 			else
-			{
-				datablock[i] = start + 1;
-			}
+				datablock[i] = start;
 		}
 		datablock[0] = 0;
 		write_disk(block_id, datablock);
+        read_disk(block_id,test);
+        uint64_t * test_block = (uint64_t*) test;
+        printf("block id %d:\n",block_id);
+        for(int j = 0;j<(BLOCKSIZE/BLOCKADDR);j++){
+            printf("%ld ",test_block[j]);
+        }
+        printf("\n");
 	}
 	else
 	{
 		datablock[0] = 0;
 		write_disk(block_id, datablock); //rewrite the last block
+        read_disk(block_id,test);
+        uint64_t * test_block = (uint64_t*) test;
+        printf("block id %d:\n",block_id);
+        for(int j = 0;j<(BLOCKSIZE/BLOCKADDR);j++){
+            printf("%ld ",test_block[j]);
+        }
+        printf("\n");
 	}
 }
 
@@ -109,13 +139,13 @@ void mkfs()
 	//start of block
 	supernode[0] = start;
 	supernode[1] = i_list_block_count; //inode block count
-	//supernode[1] = i_list_block_count * BLOCKSIZE / ((sizeof(inode)/8)); //inode count
 	supernode[2] = BLOCKSIZE;
 	supernode[3] = 1; //init flag
 	write_disk(0, tmp);
 
 	printf("data block starts from block %d\n", start);
 	init_free_disk(start);
+    printf("header %ld\n",head);
 }
 
 /* 
@@ -127,6 +157,7 @@ void read_inode(uint64_t inum, inode *node)
 	char data[BLOCKSIZE];
 	uint32_t block_id = 1 + inum / INODE_PER_BLOCK;
 	uint32_t offset = inum % INODE_PER_BLOCK;
+    assert(block_id<=i_list_block_count);
 	read_disk(block_id, data);
 	inode *inodes = (inode*) data;
 	cp_inode(node, &inodes[offset]);
@@ -136,7 +167,7 @@ void read_inode(uint64_t inum, inode *node)
 uint64_t allocate_inode()
 {
 	char tmp[BLOCKSIZE];
-	int i, j, flag, block_id;
+	int i, j, flag = 0, block_id;
 	inode *inode_block = (inode*) tmp;
 	for (i = 1; i <= i_list_block_count; i++)
 	{
@@ -149,15 +180,21 @@ uint64_t allocate_inode()
 				break;
 			}
 		}
+        if(flag)
+            break;
 	}
-	if (flag)
-	{
+	if (flag){
 		block_id = (i - 1) * INODE_PER_BLOCK + j;
 		inode_block[j].flag = 1;
+        //printf("%ld: (%ld %ld %ld)\n",block_id,inode_block[j].size,inode_block[j].direct_blocks[0],inode_block[j].flag);
 		write_disk(i,tmp);
+        read_disk(i,tmp);
+        printf("%ld\n",inode_block[j].flag);
 	}
-	else
-		block_id = -1;
+	else {
+        printf("inode full\n");
+        block_id = 0;
+    }
 	return block_id;
 }
 
@@ -208,7 +245,7 @@ uint64_t allocate_data_block()
 	read_block(head, 0, BLOCKSIZE, tmp);
 	int i = 0;
 	int res = 0;
-	for (i = 1; i < (BLOCKSIZE / 4); i++)
+	for (i = 1; i < (BLOCKSIZE / BLOCKADDR); i++)
 	{
 		if (data[i] != 0)
 		{
@@ -239,7 +276,7 @@ int free_data_block(uint64_t id)
 	uint64_t *data = (uint64_t *)tmp;
 	read_block(head, 0, BLOCKSIZE, tmp);
 	int i = 0, flag = 0;
-	for (i = 1; i < (BLOCKSIZE / 4); i++)
+	for (i = 1; i < (BLOCKSIZE / BLOCKADDR); i++)
 	{
 		if (data[i] == 0)
 		{
@@ -253,9 +290,10 @@ int free_data_block(uint64_t id)
 		write_disk(head, tmp);
 	else
 	{
-		int pre_head = head;
+		uint64_t pre_head = head;
+        printf("pre head %ld\n",pre_head);
 		head = id;
-		write_block(head, 0, sizeof(uint64_t), &pre_head);
+		write_block(pre_head, 0, sizeof(uint64_t), &id);
 	}
 	return 0;
 }
@@ -295,14 +333,5 @@ int write_block(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer)
 	return fmin(size, BLOCKSIZE - offset);
 }
 
-int main()
-{
-	char buffer[4096] = "hello world";
-	char tmp[4096];
-	write_disk(5, buffer);
-	read_disk(5, tmp);
-	printf("%s\n", tmp);
-	printf("%ld\n", sizeof(inode));
-	return 0;
-}
+
 /* size is for computation convinent */

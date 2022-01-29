@@ -20,9 +20,6 @@ typedef struct {
 	uint64_t size;//128
 } inode;
 
-static uint64_t head = 0;
-static uint64_t i_list_block_count = 0;
-
 int write_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);
 int read_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);
 
@@ -35,3 +32,5 @@ int free_inode(uint64_t inum);
 uint64_t allocate_inode();
 uint64_t allocate_data_block();
 void mkfs();
+
+uint64_t read_head();//debuging purpose

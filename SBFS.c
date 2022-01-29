@@ -74,7 +74,6 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	inode node;
 	read_inode(inum, &node);
 
-	assert(inum > i_list_block_count);
 	int start = offset / BLOCKSIZE;
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
@@ -102,7 +101,6 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	read_inode(inum, &node);
 	char *buffer = (char *)buf;
 
-	assert(inum > i_list_block_count);
 	int start = offset / BLOCKSIZE;
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
@@ -161,8 +159,10 @@ int SBFS_unlink(char *path)
 	{
 		for (int i = 0; i < item_count; i++)
 		{
-			int block_id = i * sizeof(dir) / BLOCKSIZE;
+			int index = i * sizeof(dir) / BLOCKSIZE;
 			int offset = i * sizeof(dir) % BLOCKSIZE;
+            int block_id = block_id_helper(index,&node,H_READ);
+            assert(block_id!=0);
 			SBFS_read(block_id, offset, sizeof(dir), &entry);
 			assert(entry.inum != 0);
 			free_inode(entry.inum);
@@ -207,8 +207,9 @@ dir *SBFS_readdir(uint64_t inum)
 	dir entry;
 	if (i >= item_count)
 		return NULL;
-	int block_id = i * sizeof(dir) / BLOCKSIZE;
+	int index = i * sizeof(dir) / BLOCKSIZE;
 	int offset = i * sizeof(dir) % BLOCKSIZE;
+    int block_id = block_id_helper(index,&node,H_READ);
 	SBFS_read(block_id, offset, sizeof(dir), &entry);
 	i += 1;
 	assert(entry.inum != 0);
@@ -335,4 +336,28 @@ uint64_t block_id_helper(inode *node, int index, int mode)
 		}
 		return address[index];
 	}
+}
+
+int main()
+{
+    char test[BLOCKSIZE];
+    mkfs();
+    inode node;
+    for(int i = 0; i < 256; i++){
+        uint64_t tmp1 = allocate_inode();
+        read_inode(tmp1,&node);
+        //printf("%d\n",tmp1);
+        node.size = 56;
+        node.direct_blocks[0] = 678;
+        write_inode(tmp1,&node);
+        //printf("2\n");
+        read_inode(tmp1,&node);
+        printf("id:%ld (%ld %ld %ld)\n",tmp1,node.size,node.direct_blocks[0],node.flag);
+    }
+    for(int i = 0; i < 259; i++){
+        uint64_t tmp1 = free_inode(i);
+        read_inode(i,&node);
+        printf("id:%ld (%ld %ld %ld)\n",i,node.size,node.direct_blocks[0],node.flag);
+    }
+    return 0;
 }

@@ -235,9 +235,9 @@ int read_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer){
 	}
 
 	read_disk(block_id,tmp);
-	memcpy((char*)buffer+offset,tmp,fmin(size,BLOCKSIZE-offset));
+	memcpy((char*)buffer,tmp+offset,fmin(size,BLOCKSIZE-offset));
 
-	return 0;
+	return fmin(size,BLOCKSIZE-offset);
 }
 
 /* size is for computation convinent */

@@ -53,6 +53,7 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
+		stbuf->st_size = node.size;
 	}
 	else
 	{

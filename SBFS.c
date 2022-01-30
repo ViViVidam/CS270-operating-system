@@ -333,7 +333,7 @@ uint64_t SBFS_mknod(char *path, inode *node)
 	return inum;
 }
 
-//TODO: delete from parent
+//TODO: delete from parent dir
 int SBFS_unlink(char *path)
 {
 	inode node;
@@ -367,7 +367,7 @@ int SBFS_close(int inum)
 	return 0;
 }
 
-//TODO: mode shisha?
+//TODO: mode 是啥?
 uint64_t SBFS_open(char *filename, int mode)
 {
 	uint64_t inum = SBFS_namei(filename);

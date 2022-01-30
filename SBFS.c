@@ -133,6 +133,11 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 {
 	inode node;
 	read_inode(inum, &node);
+
+	if(node.type == DIRECTORY) {
+		return 0;
+	}
+
 	char *buffer = (char *)buf;
     uint64_t upperbound = size + offset;
 	int start = offset / BLOCKSIZE;

@@ -205,30 +205,44 @@ int free_inode(uint64_t inum)
 	inode tmp;
 	if (block_id > i_list_block_count)
 	{
-		printf("block_id too big %ld \n", inum);
+		printf("free block_id too big %ld \n", inum);
 		return -1;
 	}
 	read_block(block_id, sizeof(inode) * offset, sizeof(inode), &tmp);
 
 	for (int i = 0; i < DIRECT_BLOCK; i++)
 	{
-		free_data_block(tmp.direct_blocks[i]);
-		tmp.direct_blocks[i] = 0;
+		if(tmp.direct_blocks[i]) {
+			free_data_block(tmp.direct_blocks[i]);
+			tmp.direct_blocks[i] = 0;
+		}
+		else
+			break;
 	}
 	for (int i = 0; i < SING_INDIR; i++)
 	{
-		free_data_block(tmp.sing_indirect_blocks[i] = 0);
-		tmp.sing_indirect_blocks[i] = 0;
+		if(tmp.sing_indirect_blocks[i]) {
+			free_data_block(tmp.sing_indirect_blocks[i] = 0);
+			tmp.sing_indirect_blocks[i] = 0;
+		}
+		else
+			break;
 	}
-	for (int i = 0; i < DOUB_INDIR; i++)
-	{
-		free_data_block(tmp.doub_indirect_blocks[i] = 0);
-		tmp.doub_indirect_blocks[i] = 0;
+	for (int i = 0; i < DOUB_INDIR; i++){
+		if(tmp.doub_indirect_blocks[i]) {
+			free_data_block(tmp.doub_indirect_blocks[i] = 0);
+			tmp.doub_indirect_blocks[i] = 0;
+		}
+		else
+			break;
 	}
-	for (int i = 0; i < TRIP_INDIR; i++)
-	{
-		free_data_block(tmp.trip_indirect_blocks[i] = 0);
-		tmp.trip_indirect_blocks[i] = 0;
+	for (int i = 0; i < TRIP_INDIR; i++){
+		if(tmp.trip_indirect_blocks[i]) {
+			free_data_block(tmp.trip_indirect_blocks[i] = 0);
+			tmp.trip_indirect_blocks[i] = 0;
+		}
+		else
+			break;
 	}
 	tmp.flag = 0;
 	tmp.size = 0;

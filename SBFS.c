@@ -393,7 +393,7 @@ int main()
     SBFS_init();
     uint64_t inum = SBFS_mknod("testtest1",&node);
     add_entry_to_dir(ROOT,"testtest1",inum);
-    inum = SBFS_mknod("testtest2",&node);
+    inum = SBFS_mkdir("testtest2",&node);
     add_entry_to_dir(ROOT,"testtest2",inum);
     inum = SBFS_mknod("testtest3",&node);
     add_entry_to_dir(ROOT,"testtest3",inum);
@@ -401,5 +401,6 @@ int main()
     while(entry = SBFS_readdir(ROOT)){
         printf("%s %ld\n",entry->filename,entry->inum);
     }
+    printf("%ld\n",allocate_inode());
     return 0;
 }

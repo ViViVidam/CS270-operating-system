@@ -54,3 +54,4 @@ dkms.conf
 .idea/
 fuse.h
 libfuse/
+.vscode/

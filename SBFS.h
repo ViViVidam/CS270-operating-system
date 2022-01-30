@@ -3,6 +3,7 @@
 #define MAX_FILENAME 64
 #define DIRECTORY 2
 #define NORMAL 1
+#define ROOT 1
 
 typedef struct{
 	char filename[MAX_FILENAME];
@@ -13,6 +14,9 @@ uint64_t SBFS_open(char *filename, int mode);
 int SBFS_close(int node);
 uint64_t SBFS_mkdir(char *filename, inode *node);
 uint64_t SBFS_mknod(char *filename, inode *node);
+
+uint64_t add_entry_to_dir(uint64_t inum,char* filename,uint64_t file_inode);
+
 int SBFS_unlink(char *path);
 dir *SBFS_readdir(uint64_t inum);
 uint64_t SBFS_namei(char *path);

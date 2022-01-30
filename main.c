@@ -35,7 +35,7 @@ struct fuse_operations {
 #include <fcntl.h>
 #include <stddef.h>
 #include <assert.h>
-#include "SBSF.h"
+//#include "SBSF.h"
 /*
  * Command line options
  *
@@ -100,7 +100,7 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
-	//filler(buf, options.filename, NULL, 0, 0);
+	filler(buf, options.filename, NULL, 0, 0);
 
 	return 0;
 }
@@ -136,8 +136,9 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
 	return size;
 }
 
-static int mkdir(const char *, mode_t){
-	return SBSF_mkdir();
+static int hello_mkdir(const char *filename, mode_t mode){
+    printf("filename %s\n",filename);
+	return 1;
 }
 
 static const struct fuse_operations hello_oper = {
@@ -146,7 +147,7 @@ static const struct fuse_operations hello_oper = {
 	.readdir	= hello_readdir,
 	.open		= hello_open, //open()
 	.read		= hello_read,//read()
-	.mkdir      = mkdir
+	.mkdir      = hello_mkdir
 };
 
 static void show_help(const char *progname)
@@ -164,7 +165,6 @@ int main(int argc, char *argv[])
 {
 	int ret;
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
-	printf("system started\n");
 	/* Set defaults -- we have to use strdup so that
 	   fuse_opt_parse can free the defaults if other
 	   values are specified */
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 		args.argv[0][0] = '\0';
 	}
 
-
+		printf("system started\n");
 	ret = fuse_main(args.argc, args.argv, &hello_oper, NULL);
 	fuse_opt_free_args(&args);
 	return ret;

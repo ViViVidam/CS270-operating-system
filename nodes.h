@@ -6,7 +6,6 @@
 #define SING_INDIR 1
 #define DOUB_INDIR 1
 #define TRIP_INDIR 1
-#define ROOT 0
 //assert
 typedef struct { 
 	//uint64_t blocks[13];

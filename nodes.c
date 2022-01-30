@@ -36,8 +36,8 @@ void write_inode(uint64_t inum, inode *node)
 {
 	char data[BLOCKSIZE];
     //printf("write %ld %ld %ld\n",node->size,node->sing_indirect_blocks[0],node->flag);
-	uint64_t block_id = inum / INODE_PER_BLOCK + 1;
-	uint64_t offset = inum % INODE_PER_BLOCK;
+	uint64_t block_id = (inum - 1) / INODE_PER_BLOCK + 1;
+	uint64_t offset = (inum - 1) % INODE_PER_BLOCK;
 	read_disk(block_id, data);
 	inode *inodes = (inode *)data;
 
@@ -70,11 +70,11 @@ void init_free_disk(int start)
 		write_disk(block_id, datablock);
         read_disk(block_id,test);
         uint64_t * test_block = (uint64_t*) test;
-        printf("block id %d:\n",block_id);
-        for(int j = 0;j<(BLOCKSIZE/BLOCKADDR);j++){
+        //printf("block id %d:\n",block_id);
+        /*for(int j = 0;j<(BLOCKSIZE/BLOCKADDR);j++){
             printf("%ld ",test_block[j]);
         }
-        printf("\n");
+        printf("\n");*/
 	}
 
 	if ((BLOCKCOUNT - i_list_block_count - 1) % block_entries_per_block != 0)
@@ -93,11 +93,11 @@ void init_free_disk(int start)
 		write_disk(block_id, datablock);
         read_disk(block_id,test);
         uint64_t * test_block = (uint64_t*) test;
-        printf("block id %d:\n",block_id);
+        /*printf("block id %d:\n",block_id);
         for(int j = 0;j<(BLOCKSIZE/BLOCKADDR);j++){
             printf("%ld ",test_block[j]);
         }
-        printf("\n");
+        printf("\n");*/
 	}
 	else
 	{
@@ -105,11 +105,11 @@ void init_free_disk(int start)
 		write_disk(block_id, datablock); //rewrite the last block
         read_disk(block_id,test);
         uint64_t * test_block = (uint64_t*) test;
-        printf("block id %d:\n",block_id);
+        /*printf("block id %d:\n",block_id);
         for(int j = 0;j<(BLOCKSIZE/BLOCKADDR);j++){
             printf("%ld ",test_block[j]);
         }
-        printf("\n");
+        printf("\n");*/
 	}
 }
 
@@ -145,7 +145,7 @@ void mkfs()
 
 	printf("data block starts from block %d\n", start);
 	init_free_disk(start);
-    printf("header %ld\n",head);
+    //printf("header %ld\n",head);
 }
 
 /* 
@@ -155,8 +155,8 @@ void mkfs()
 void read_inode(uint64_t inum, inode *node)
 {
 	char data[BLOCKSIZE];
-	uint32_t block_id = 1 + inum / INODE_PER_BLOCK;
-	uint32_t offset = inum % INODE_PER_BLOCK;
+	uint32_t block_id = 1 + (inum - 1) / INODE_PER_BLOCK;
+	uint32_t offset = (inum - 1) % INODE_PER_BLOCK;
     assert(block_id<=i_list_block_count);
 	read_disk(block_id, data);
 	inode *inodes = (inode*) data;
@@ -167,7 +167,7 @@ void read_inode(uint64_t inum, inode *node)
 uint64_t allocate_inode()
 {
 	char tmp[BLOCKSIZE];
-	int i, j, flag = 0, block_id;
+	int i, j, flag = 0, inum;
 	inode *inode_block = (inode*) tmp;
 	for (i = 1; i <= i_list_block_count; i++)
 	{
@@ -176,6 +176,7 @@ uint64_t allocate_inode()
 		{
 			if (inode_block[j].flag == 0)
 			{
+                //printf("flag %ld %ld %ld\n",i,j,inode_block[j].flag);
 				flag = 1;
 				break;
 			}
@@ -184,24 +185,23 @@ uint64_t allocate_inode()
             break;
 	}
 	if (flag){
-		block_id = (i - 1) * INODE_PER_BLOCK + j;
+		inum = (i - 1) * INODE_PER_BLOCK + j + 1;
+        //printf("inum %ld %ld %ld\n",i,j,inum);
 		inode_block[j].flag = 1;
-        //printf("%ld: (%ld %ld %ld)\n",block_id,inode_block[j].size,inode_block[j].direct_blocks[0],inode_block[j].flag);
 		write_disk(i,tmp);
-        read_disk(i,tmp);
-        printf("%ld\n",inode_block[j].flag);
+        //printf("flag %ld %ld %ld\n",i,j,inode_block[j].flag);
 	}
 	else {
         printf("inode full\n");
-        block_id = 0;
+        inum = 0;
     }
-	return block_id;
+	return inum;
 }
 
 int free_inode(uint64_t inum)
 {
-	uint64_t block_id = 1 + inum / INODE_PER_BLOCK;
-	uint32_t offset = inum % INODE_PER_BLOCK;
+	uint64_t block_id = 1 + (inum - 1) / INODE_PER_BLOCK;
+	uint32_t offset = (inum - 1) % INODE_PER_BLOCK;
 	inode tmp;
 	if (block_id > i_list_block_count)
 	{

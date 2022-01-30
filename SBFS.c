@@ -105,6 +105,7 @@ uint64_t SBFS_namei(char *path)
 		else
 			return inum;
 	}
+	// WHY?
 	return 1; // the path end with /
 }
 
@@ -170,9 +171,79 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	return 0;
 }
 
-/* direcotry is dir, the item is empty when inode = 0 */
-uint64_t SBFS_mkdir(char *filename, inode *node)
+int find_slash(char *path, int pos)
 {
+	char *pointer = path + pos;
+	while (*pointer != 0 && *pointer != '/')
+	{
+		pointer++;
+	}
+	if (*pointer == 0)
+	{
+		return -1;
+	}
+	return pointer - path;
+}
+
+int get_len(char *path)
+{
+	int len = 0;
+	char *pointer = path;
+	while (*pointer != 0)
+	{
+		len++;
+		pointer++;
+	}
+	return len;
+}
+
+/* direcotry is dir, the item is empty when inode = 0 */
+/*
+return 0: can not mkdir
+*/
+uint64_t SBFS_mkdir(char *path, inode *node)
+{
+	int len = get_len(path);
+	if (*(path + len - 1) == '/')
+	{
+		*(path + len - 1) = 0;
+	}
+	//can not make new dir cause it exist
+	if (SBFS_namei(path) != 0)
+	{
+		return 0;
+	}
+	//prev is the position of the last slash
+	int prev = -1;
+	int pos = find_slash(path, pos);
+	while (pos != -1)
+	{
+		if (pos < len)
+		{
+			prev = pos;
+			pos = find_slash(path, pos);
+		}
+	}
+	dir *entry;
+	char *path_before_slash;
+	char dirname[MAX_FILENAME];
+	uint64_t inum_path = 1;
+
+	if (prev != -1)
+	{
+		memset(path_before_slash, 0, len);
+		memcpy(path_before_slash, path, prev);
+		inum_path = SBFS_namei(path_before_slash);
+		if (inum_path == 0)
+		{
+			return 0;
+		}
+		memcpy(dirname, path + prev + 1, len - prev - 1);
+	}
+	else
+	{
+		memcpy(dirname, path, len);
+	}
 
 	/* writing into new dir */
 	uint64_t inum = allocate_inode();
@@ -181,11 +252,31 @@ uint64_t SBFS_mkdir(char *filename, inode *node)
 	node->size = 0;
 	node->flag = 1;
 	write_inode(inum, node);
+
+	//TODO: write into parent dir
+	add_entry_to_dir(inum_path, dirname, inum);
+
 	return inum;
 }
 
-uint64_t SBFS_mknod(char *filename, inode *node)
+// uint64_t SBFS_mknod(char *filename, inode *node)
+// {
+// 	uint64_t inum = allocate_inode();
+// 	read_inode(inum, node);
+// 	printf("SBFS_mknod read %ld\n", node->flag);
+// 	node->type = NORMAL;
+// 	node->size = 0;
+// 	write_inode(inum, node);
+// 	return inum;
+// }
+
+uint64_t SBFS_mknod(char *path, inode *node)
 {
+	int len = get_len(path);
+	if (*(path + len - 1) == '/')
+	{
+		return 0;
+	}
 	uint64_t inum = allocate_inode();
 	read_inode(inum, node);
 	printf("SBFS_mknod read %ld\n", node->flag);
@@ -240,7 +331,6 @@ void SBFS_init()
 	create_root_dir();
 }
 
-//TODO: 感觉不太对
 dir *SBFS_readdir(uint64_t inum)
 {
 	static int i;

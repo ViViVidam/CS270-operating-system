@@ -9,6 +9,8 @@ static const struct fuse_operations hello_oper = {
 	.readdir = sb_readdir,
 	.open = sb_open,
 	.read = sb_read,
+	.mkdir = sb_mkdir,
+	.mknod = sb_mknod,
 };
 
 static void *sb_init(struct fuse_conn_info *conn,
@@ -24,7 +26,8 @@ static void *sb_init(struct fuse_conn_info *conn,
 static int sb_getattr(const char *path, struct stat *stbuf,
 					  struct fuse_file_info *fi)
 {
-	
+	printf("\nsb_getattr(path=\"%s\", stbuf=0x%08x, fi = 0x%08x)\n", path, stbuf, fi);
+
 	memset(stbuf, 0, sizeof(struct stat));
 
 	stbuf->st_uid = getuid();
@@ -37,7 +40,8 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 	inode node;
 	read_inode(inum, &node);
 
-	if(node.type == DIRECTORY) {
+	if (node.type == DIRECTORY)
+	{
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 	}
@@ -55,6 +59,8 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 					  off_t offset, struct fuse_file_info *fi,
 					  enum fuse_readdir_flags flags)
 {
+	printf("\nsb_readdir(path=\"%s\", fi = 0x%08x)\n", path, fi);
+
 	(void)offset;
 	//(void)fi;
 	(void)flags;
@@ -63,41 +69,61 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	inode node;
 	read_inode(inum, &node);
 
-	if(node.type != DIRECTORY) {
+	if (node.type != DIRECTORY)
+	{
 		return -1;
-	} else {
+	}
+	else
+	{
 		filler(buf, ".", NULL, 0, 0);
 		filler(buf, "..", NULL, 0, 0);
-		//TODO: read file in path 1 by 1
-		while(1) {
-			;
+		// read file in path 1 by 1
+		while (1)
+		{
+			dir* dr = SBFS_readdir(inum);
+			if(dr) {
+				filler(buf, dr->filename, NULL, 0, 0);
+			} else {
+				break;
+			}
 		}
 	}
 
 	return 0;
 }
 
-
 static int sb_opendir(const char *path, struct fuse_file_info *fi)
 {
+	printf("\nsb_opendir(path=\"%s\", fi=0x%08x)\n", path, fi);
 	uint64_t inum = SBFS_namei(path);
 
 	//wrong inum
-	if(inum == 0) {
+	if (inum == 0)
+	{
 		return -1;
 	}
 	fi->fh = inum;
 	inode node;
 	read_inode(inum, &node);
 
-	if(node.type != DIRECTORY) {
+	if (node.type != DIRECTORY)
+	{
 		return -1;
-	} else {
-		//TODO: how to open?
+	}
+	else
+	{
+		// how to open? are there anything else?
 		return 0;
 	}
 }
 
+static int sb_mknod(const char *path, mode_t mode, dev_t dev) {
+
+}
+
+static int sb_mkdir (const char *path, mode_t mode) {
+
+}
 
 
 static int sb_open(const char *path, struct fuse_file_info *fi)

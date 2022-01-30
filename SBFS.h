@@ -4,7 +4,8 @@
 #define DIRECTORY 2
 #define NORMAL 1
 
-typedef struct{
+typedef struct
+{
 	char filename[MAX_FILENAME];
 	uint64_t inum;
 } dir;

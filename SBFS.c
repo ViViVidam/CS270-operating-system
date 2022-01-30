@@ -17,22 +17,23 @@ uint64_t block_id_helper(inode *node, int index, int mode);
 
 uint64_t find_file_entry(uint64_t inum, char *filename)
 {
-    inode node;
-    int j = 0;
-    read_inode(inum,&node);
-    int entry_count = node.size / sizeof (dir);
-    assert( (node.size%sizeof(dir)) == 0 );
-    for(int i = 0; i < entry_count ; i++ )
-    {
-        dir entry;
-        int index = i * sizeof(dir);
-        int offset = i * sizeof(dir) % BLOCKSIZE;
-        read_block(block_id_helper(&node,index,H_READ),offset,sizeof(dir),&entry);
-        if(strcmp(entry.filename,filename)==0){
-            return entry.inum;
-        }
-    }
-    return 0;
+	inode node;
+	int j = 0;
+	read_inode(inum, &node);
+	int entry_count = node.size / sizeof(dir);
+	assert((node.size % sizeof(dir)) == 0);
+	for (int i = 0; i < entry_count; i++)
+	{
+		dir entry;
+		int index = i * sizeof(dir);
+		int offset = i * sizeof(dir) % BLOCKSIZE;
+		read_block(block_id_helper(&node, index, H_READ), offset, sizeof(dir), &entry);
+		if (strcmp(entry.filename, filename) == 0)
+		{
+			return entry.inum;
+		}
+	}
+	return 0;
 }
 
 uint64_t SBFS_namei(char *path)
@@ -57,10 +58,11 @@ uint64_t SBFS_namei(char *path)
 		block_id = find_file_entry(block_id, filename);
 		if (block_id == 0)
 			return 0; //cannot find inode
-		if (*pointer == '/') {
-            i = 0;
-            pointer++;
-        }
+		if (*pointer == '/')
+		{
+			i = 0;
+			pointer++;
+		}
 		else
 			return block_id;
 	}
@@ -112,7 +114,7 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	while (size > 0)
 	{
 		start += 1;
-        int block_id = block_id_helper(&node, start, H_CREATE);
+		int block_id = block_id_helper(&node, start, H_CREATE);
 		write_bytes = write_block(block_id, block_offset, size, buf);
 		buffer += write_bytes;
 		size -= write_bytes;
@@ -161,8 +163,8 @@ int SBFS_unlink(char *path)
 		{
 			int index = i * sizeof(dir) / BLOCKSIZE;
 			int offset = i * sizeof(dir) % BLOCKSIZE;
-            int block_id = block_id_helper(index,&node,H_READ);
-            assert(block_id!=0);
+			int block_id = block_id_helper(index, &node, H_READ);
+			assert(block_id != 0);
 			SBFS_read(block_id, offset, sizeof(dir), &entry);
 			assert(entry.inum != 0);
 			free_inode(entry.inum);
@@ -209,11 +211,11 @@ dir *SBFS_readdir(uint64_t inum)
 		return NULL;
 	int index = i * sizeof(dir) / BLOCKSIZE;
 	int offset = i * sizeof(dir) % BLOCKSIZE;
-    int block_id = block_id_helper(index,&node,H_READ);
+	int block_id = block_id_helper(index, &node, H_READ);
 	SBFS_read(block_id, offset, sizeof(dir), &entry);
 	i += 1;
 	assert(entry.inum != 0);
-    return &entry;
+	return &entry;
 }
 
 uint64_t block_id_helper(inode *node, int index, int mode)
@@ -307,7 +309,7 @@ uint64_t block_id_helper(inode *node, int index, int mode)
 			{
 				address[next_level_index] = allocate_data_block();
 				write_block(address[next_level_index], 0, BLOCKSIZE, zero);
-				write_block(node->trip_indirect_blocks[0],0,BLOCKSIZE, tmp);
+				write_block(node->trip_indirect_blocks[0], 0, BLOCKSIZE, tmp);
 			}
 			else
 				return 0;
@@ -340,24 +342,26 @@ uint64_t block_id_helper(inode *node, int index, int mode)
 
 int main()
 {
-    char test[BLOCKSIZE];
-    mkfs();
-    inode node;
-    for(int i = 0; i < 256; i++){
-        uint64_t tmp1 = allocate_inode();
-        read_inode(tmp1,&node);
-        //printf("%d\n",tmp1);
-        node.size = 56;
-        node.direct_blocks[0] = 678;
-        write_inode(tmp1,&node);
-        //printf("2\n");
-        read_inode(tmp1,&node);
-        printf("id:%ld (%ld %ld %ld)\n",tmp1,node.size,node.direct_blocks[0],node.flag);
-    }
-    for(int i = 0; i < 259; i++){
-        uint64_t tmp1 = free_inode(i);
-        read_inode(i,&node);
-        printf("id:%ld (%ld %ld %ld)\n",i,node.size,node.direct_blocks[0],node.flag);
-    }
-    return 0;
+	char test[BLOCKSIZE];
+	mkfs();
+	inode node;
+	for (int i = 0; i < 256; i++)
+	{
+		uint64_t tmp1 = allocate_inode();
+		read_inode(tmp1, &node);
+		//printf("%d\n",tmp1);
+		node.size = 56;
+		node.direct_blocks[0] = 678;
+		write_inode(tmp1, &node);
+		//printf("2\n");
+		read_inode(tmp1, &node);
+		printf("id:%ld (%ld %ld %ld)\n", tmp1, node.size, node.direct_blocks[0], node.flag);
+	}
+	for (int i = 0; i < 259; i++)
+	{
+		uint64_t tmp1 = free_inode(i);
+		read_inode(i, &node);
+		printf("id:%ld (%ld %ld %ld)\n", i, node.size, node.direct_blocks[0], node.flag);
+	}
+	return 0;
 }

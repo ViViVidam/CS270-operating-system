@@ -131,7 +131,8 @@ static int sb_opendir(const char *path, struct fuse_file_info *fi)
 	}
 }
 
-static int sb_releasedir(const char *path, struct fuse_file_info *fi) {
+static int sb_releasedir(const char *path, struct fuse_file_info *fi)
+{
 	printf("\nbb_releasedir(path=\"%s\", fi=0x%08x)\n", path, fi);
 	int ret = SBFS_close(fi->fh);
 	return ret;
@@ -194,7 +195,8 @@ static int sb_write(const char *path, const char *buf, size_t size,
 	return ret;
 }
 
-static int sb_release(const char *path, struct fuse_file_info *fi) {
+static int sb_release(const char *path, struct fuse_file_info *fi)
+{
 	printf("\nsb_release(path=\"%s\", fi=0x%08x)\n", path, fi);
 	int ret = SBFS_close(fi->fh);
 	return ret;
@@ -207,8 +209,6 @@ static int sb_unlink(const char *path)
 	int ret = SBFS_unlink(path);
 	return ret;
 }
-
-
 
 /** Remove a directory */
 static int sb_rmdir(const char *path)

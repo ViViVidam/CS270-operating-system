@@ -105,7 +105,7 @@ uint64_t SBFS_namei(char *path)
 		else
 			return inum;
 	}
-	// WHY?
+	//TODO: WHY?
 	return 1; // the path end with /
 }
 
@@ -333,7 +333,6 @@ uint64_t SBFS_mknod(char *path, inode *node)
 	return inum;
 }
 
-
 //TODO: delete from parent
 int SBFS_unlink(char *path)
 {
@@ -367,7 +366,6 @@ int SBFS_close(int inum)
 {
 	return 0;
 }
-
 
 //TODO: mode shisha?
 uint64_t SBFS_open(char *filename, int mode)

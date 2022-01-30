@@ -5,7 +5,8 @@
 #define NORMAL 1
 #define ROOT 1
 
-typedef struct{
+typedef struct
+{
 	char filename[MAX_FILENAME];
 	uint64_t inum;
 } dir;

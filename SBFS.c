@@ -146,7 +146,7 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	while (size > 0)
 	{
 		start += 1;
-        int block_id = block_id_helper(&node, start, H_CREATE);
+		int block_id = block_id_helper(&node, start, H_CREATE);
 		write_bytes = write_block(block_id, block_offset, size, buf);
 		buffer += write_bytes;
 		size -= write_bytes;
@@ -200,8 +200,8 @@ int SBFS_unlink(char *path)
 		{
 			int index = i * sizeof(dir) / BLOCKSIZE;
 			int offset = i * sizeof(dir) % BLOCKSIZE;
-            int block_id = block_id_helper(index,&node,H_READ);
-            assert(block_id!=0);
+			int block_id = block_id_helper(index, &node, H_READ);
+			assert(block_id != 0);
 			SBFS_read(block_id, offset, sizeof(dir), &entry);
 			assert(entry.inum != 0);
 			free_inode(entry.inum);
@@ -345,7 +345,7 @@ uint64_t block_id_helper(inode *node, int index, int mode){
 			{
 				address[next_level_index] = allocate_data_block();
 				write_block(address[next_level_index], 0, BLOCKSIZE, zero);
-				write_block(node->trip_indirect_blocks[0],0,BLOCKSIZE, tmp);
+				write_block(node->trip_indirect_blocks[0], 0, BLOCKSIZE, tmp);
 			}
 			else
 				return 0;
@@ -403,4 +403,3 @@ int main()
     }
     return 0;
 }
-

@@ -6,17 +6,26 @@
 static const struct fuse_operations hello_oper = {
 	.init = sb_init,
 	.getattr = sb_getattr,
+	.opendir = sb_opendir,
 	.readdir = sb_readdir,
+	.releasedir = sb_releasedir,
 	.open = sb_open,
 	.read = sb_read,
+	.write = sb_write,
+	.release = sb_release,
 	.mkdir = sb_mkdir,
 	.mknod = sb_mknod,
+	.unlink = sb_unlink,
+	.rmdir = sb_rmdir,
+
 };
 
 static void *sb_init(struct fuse_conn_info *conn,
 					 struct fuse_config *cfg)
 {
+	printf("\nsb_init\n");
 	(void)conn;
+	(void)cfg;
 
 	SBFS_init();
 
@@ -71,6 +80,7 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	if (node.type != DIRECTORY)
 	{
+		printf("read dir failed.");
 		return -1;
 	}
 	else
@@ -103,6 +113,7 @@ static int sb_opendir(const char *path, struct fuse_file_info *fi)
 	//wrong inum
 	if (inum == 0)
 	{
+		printf("open dir failed.");
 		return -1;
 	}
 	fi->fh = inum;
@@ -111,13 +122,19 @@ static int sb_opendir(const char *path, struct fuse_file_info *fi)
 
 	if (node.type != DIRECTORY)
 	{
+		printf("open dir failed.");
 		return -1;
 	}
 	else
 	{
-		// how to open? are there anything else?
 		return 0;
 	}
+}
+
+static int sb_releasedir(const char *path, struct fuse_file_info *fi) {
+	printf("\nbb_releasedir(path=\"%s\", fi=0x%08x)\n", path, fi);
+	int ret = SBFS_close(fi->fh);
+	return ret;
 }
 
 static int sb_mknod(const char *path, mode_t mode, dev_t dev)
@@ -148,10 +165,11 @@ static int sb_mkdir(const char *path, mode_t mode)
 
 static int sb_open(const char *path, struct fuse_file_info *fi)
 {
-	printf("\nsb_open(path\"%s\", fi=0x%08x)\n",path, fi);
+	printf("\nsb_open(path\"%s\", fi=0x%08x)\n", path, fi);
 
 	uint64_t inum = SBFS_open(path, 1);
-	if(inum == 0) {
+	if (inum == 0)
+	{
 		printf("open failed");
 		return -1;
 	}
@@ -162,8 +180,41 @@ static int sb_open(const char *path, struct fuse_file_info *fi)
 static int sb_read(const char *path, char *buf, size_t size, off_t offset,
 				   struct fuse_file_info *fi)
 {
-	size_t len;
-	(void)fi;
+	printf("\nsb_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi);
+	int ret = SBFS_read(fi->fh, offset, size, buf);
+	return ret;
+}
 
-	return size;
+static int sb_write(const char *path, const char *buf, size_t size,
+					off_t offset, struct fuse_file_info *fi)
+{
+	printf("\nsb_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
+		   path, buf, size, offset, fi);
+	int ret = SBFS_write(fi->fh, offset, size, buf);
+	return ret;
+}
+
+static int sb_release(const char *path, struct fuse_file_info *fi) {
+	printf("\nsb_release(path=\"%s\", fi=0x%08x)\n", path, fi);
+	int ret = SBFS_close(fi->fh);
+	return ret;
+}
+
+/** Remove a file */
+static int sb_unlink(const char *path)
+{
+	printf("sb_unlink(path=\"%s\")\n", path);
+	int ret = SBFS_unlink(path);
+	return ret;
+}
+
+
+
+/** Remove a directory */
+static int sb_rmdir(const char *path)
+{
+	printf("sb_rmdir(path=\"%s\")\n", path);
+	//TODO: is the same SBFS_unlink file?
+	int ret = SBFS_unlink(path);
+	return ret;
 }

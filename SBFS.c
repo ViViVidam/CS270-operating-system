@@ -109,6 +109,7 @@ uint64_t SBFS_namei(char *path)
 	return 1; // the path end with /
 }
 
+//TODO: 是不是要return read size
 int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 {
 	char *buffer = (char *)buf;
@@ -362,7 +363,7 @@ int SBFS_unlink(char *path)
 	return 0;
 }
 
-int SBFS_close(int node)
+int SBFS_close(int inum)
 {
 	return 0;
 }

@@ -13,7 +13,7 @@ typedef struct
 } dir;
 
 uint64_t SBFS_open(char *filename, int mode);
-int SBFS_close(int node);
+int SBFS_close(int inum);
 uint64_t SBFS_mkdir(char *path, inode *node);
 uint64_t SBFS_mknod(char *path, inode *node);
 

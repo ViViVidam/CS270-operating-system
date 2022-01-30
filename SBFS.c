@@ -185,6 +185,21 @@ int find_slash(char *path, int pos)
 	return pointer - path;
 }
 
+int find_last_slash(char *path, int len)
+{
+	int prev = -1;
+	int pos = find_slash(path, pos);
+	while (pos != -1)
+	{
+		if (pos < len)
+		{
+			prev = pos;
+			pos = find_slash(path, pos);
+		}
+	}
+	return prev;
+}
+
 int get_len(char *path)
 {
 	int len = 0;
@@ -214,29 +229,30 @@ uint64_t SBFS_mkdir(char *path, inode *node)
 		return 0;
 	}
 	//prev is the position of the last slash
-	int prev = -1;
-	int pos = find_slash(path, pos);
-	while (pos != -1)
-	{
-		if (pos < len)
-		{
-			prev = pos;
-			pos = find_slash(path, pos);
-		}
-	}
+	int prev = find_last_slash(path, len);
+
 	dir *entry;
 	char *path_before_slash;
 	char dirname[MAX_FILENAME];
-	uint64_t inum_path = 1;
+	uint64_t parent_path_inum = 1;
 
 	if (prev != -1)
 	{
 		memset(path_before_slash, 0, len);
 		memcpy(path_before_slash, path, prev);
-		inum_path = SBFS_namei(path_before_slash);
-		if (inum_path == 0)
+		parent_path_inum = SBFS_namei(path_before_slash);
+		if (parent_path_inum == 0)
 		{
 			return 0;
+		}
+		else
+		{
+			inode parent_node;
+			read_inode(parent_path_inum, &parent_node);
+			if (parent_node.type != DIRECTORY)
+			{
+				return 0;
+			}
 		}
 		memcpy(dirname, path + prev + 1, len - prev - 1);
 	}
@@ -254,21 +270,10 @@ uint64_t SBFS_mkdir(char *path, inode *node)
 	write_inode(inum, node);
 
 	//TODO: write into parent dir
-	add_entry_to_dir(inum_path, dirname, inum);
+	add_entry_to_dir(parent_path_inum, dirname, inum);
 
 	return inum;
 }
-
-// uint64_t SBFS_mknod(char *filename, inode *node)
-// {
-// 	uint64_t inum = allocate_inode();
-// 	read_inode(inum, node);
-// 	printf("SBFS_mknod read %ld\n", node->flag);
-// 	node->type = NORMAL;
-// 	node->size = 0;
-// 	write_inode(inum, node);
-// 	return inum;
-// }
 
 uint64_t SBFS_mknod(char *path, inode *node)
 {
@@ -277,12 +282,53 @@ uint64_t SBFS_mknod(char *path, inode *node)
 	{
 		return 0;
 	}
+	if (SBFS_namei(path) != 0)
+	{
+		return 0;
+	}
+	//prev is the position of the last slash
+	int prev = find_last_slash(path, len);
+
+	dir *entry;
+	char *path_before_slash;
+	char filename[MAX_FILENAME];
+	uint64_t parent_path_inum = 1;
+
+	if (prev != -1)
+	{
+		memset(path_before_slash, 0, len);
+		memcpy(path_before_slash, path, prev);
+		parent_path_inum = SBFS_namei(path_before_slash);
+		if (parent_path_inum == 0)
+		{
+			return 0;
+		}
+		else
+		{
+			inode parent_node;
+			read_inode(parent_path_inum, &parent_node);
+			if (parent_node.type != DIRECTORY)
+			{
+				return 0;
+			}
+		}
+		memcpy(filename, path + prev + 1, len - prev - 1);
+	}
+	else
+	{
+		memcpy(filename, path, len);
+	}
+
 	uint64_t inum = allocate_inode();
 	read_inode(inum, node);
 	printf("SBFS_mknod read %ld\n", node->flag);
 	node->type = NORMAL;
 	node->size = 0;
 	write_inode(inum, node);
+
+	//TODO: write into parent dir
+	add_entry_to_dir(parent_path_inum, filename, inum);
+
 	return inum;
 }
 

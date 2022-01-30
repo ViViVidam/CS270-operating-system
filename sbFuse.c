@@ -3,7 +3,7 @@
 
 #define FUSE_USE_VERSION 31
 
-static const struct fuse_operations hello_oper = {
+static const struct fuse_operations sb_oper = {
 	.init = sb_init,
 	.getattr = sb_getattr,
 	.opendir = sb_opendir,
@@ -218,4 +218,9 @@ static int sb_rmdir(const char *path)
 	//TODO: is the same SBFS_unlink file?
 	int ret = SBFS_unlink(path);
 	return ret;
+}
+
+int main(int argc, char *argv[])
+{
+  return fuse_main(argc, argv, &sb_oper, NULL);
 }

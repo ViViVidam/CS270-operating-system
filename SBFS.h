@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "nodes.h"
 
 #define MAX_FILENAME 64
 #define DIRECTORY 2

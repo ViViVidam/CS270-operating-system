@@ -174,27 +174,29 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 int find_slash(char *path, int pos)
 {
 	char *pointer = path + pos;
+	int res = pos;
 	while (*pointer != 0 && *pointer != '/')
 	{
+		++res;
 		pointer++;
 	}
 	if (*pointer == 0)
 	{
 		return -1;
 	}
-	return pointer - path;
+	return res;
 }
 
 int find_last_slash(char *path, int len)
 {
 	int prev = -1;
-	int pos = find_slash(path, pos);
+	int pos = find_slash(path, 0);
 	while (pos != -1)
 	{
 		if (pos < len)
 		{
 			prev = pos;
-			pos = find_slash(path, pos);
+			pos = find_slash(path, pos + 1);
 		}
 	}
 	return prev;
@@ -231,7 +233,6 @@ uint64_t SBFS_mkdir(char *path, inode *node)
 	//prev is the position of the last slash
 	int prev = find_last_slash(path, len);
 
-	dir *entry;
 	char *path_before_slash;
 	char dirname[MAX_FILENAME];
 	uint64_t parent_path_inum = 1;
@@ -289,7 +290,6 @@ uint64_t SBFS_mknod(char *path, inode *node)
 	//prev is the position of the last slash
 	int prev = find_last_slash(path, len);
 
-	dir *entry;
 	char *path_before_slash;
 	char filename[MAX_FILENAME];
 	uint64_t parent_path_inum = 1;
@@ -332,6 +332,8 @@ uint64_t SBFS_mknod(char *path, inode *node)
 	return inum;
 }
 
+
+//TODO: delete from parent
 int SBFS_unlink(char *path)
 {
 	inode node;
@@ -365,10 +367,12 @@ int SBFS_close(int node)
 	return 0;
 }
 
+
+//TODO: mode shisha?
 uint64_t SBFS_open(char *filename, int mode)
 {
-	uint64_t inode = SBFS_namei(filename);
-	return inode;
+	uint64_t inum = SBFS_namei(filename);
+	return inum;
 }
 
 void SBFS_init()

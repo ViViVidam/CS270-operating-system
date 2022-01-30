@@ -80,10 +80,13 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		// read file in path 1 by 1
 		while (1)
 		{
-			dir* dr = SBFS_readdir(inum);
-			if(dr) {
+			dir *dr = SBFS_readdir(inum);
+			if (dr)
+			{
 				filler(buf, dr->filename, NULL, 0, 0);
-			} else {
+			}
+			else
+			{
 				break;
 			}
 		}
@@ -117,19 +120,43 @@ static int sb_opendir(const char *path, struct fuse_file_info *fi)
 	}
 }
 
-static int sb_mknod(const char *path, mode_t mode, dev_t dev) {
-
+static int sb_mknod(const char *path, mode_t mode, dev_t dev)
+{
+	printf("\nsb_mknod(path=\"%s\", mode=0%3o, dev=%lld)\n", path, mode, dev);
+	inode node;
+	int ret = SBFS_mknod(path, &node);
+	if (ret == 0)
+	{
+		printf("mknod failed");
+		return -1;
+	}
+	return ret;
 }
 
-static int sb_mkdir (const char *path, mode_t mode) {
-
+static int sb_mkdir(const char *path, mode_t mode)
+{
+	printf("\nsb_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
+	inode node;
+	int ret = SBFS_mkdir(path, &node);
+	if (ret == 0)
+	{
+		printf("mkdir failed");
+		return -1;
+	}
+	return ret;
 }
-
 
 static int sb_open(const char *path, struct fuse_file_info *fi)
 {
+	printf("\nsb_open(path\"%s\", fi=0x%08x)\n",path, fi);
 
-	return 0;
+	uint64_t inum = SBFS_open(path, 1);
+	if(inum == 0) {
+		printf("open failed");
+		return -1;
+	}
+	fi->fh = inum;
+	return inum;
 }
 
 static int sb_read(const char *path, char *buf, size_t size, off_t offset,

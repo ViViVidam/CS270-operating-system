@@ -216,7 +216,7 @@ static int sb_rmdir(const char *path)
 {
 	printf("\nsb_rmdir(path=\"%s\")\n", path);
 	//TODO: is the same SBFS_unlink file?
-	int ret = SBFS_unlink(path);
+	int ret = SBFS_rmdir(path);
 	return ret;
 }
 

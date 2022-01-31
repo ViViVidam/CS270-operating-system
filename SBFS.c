@@ -159,9 +159,7 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 }
 
 /* direcotry is dir, the item is empty when inode = 0 */
-uint64_t SBFS_mkdir(char *filename, inode *node)
-{
-
+uint64_t SBFS_mkdir(char *filename, inode *node){
 	/* writing into new dir */
 	uint64_t inum = allocate_inode();
 	memset(node, 0, sizeof(inode));
@@ -183,8 +181,7 @@ uint64_t SBFS_mknod(char *filename, inode *node)
 	return inum;
 }
 
-int SBFS_unlink(char *path)
-{
+int SBFS_unlink(char *path){
 	inode node;
 	uint64_t inum = SBFS_namei(path);
     printf("unlink %ld\n",inum);
@@ -216,14 +213,12 @@ int SBFS_close(int node)
 	return 0;
 }
 
-uint64_t SBFS_open(char *filename, int mode)
-{
+uint64_t SBFS_open(char *filename, int mode){
 	uint64_t inode = SBFS_namei(filename);
 	return inode;
 }
 
-void SBFS_init()
-{
+void SBFS_init(){
 	mkfs();
     create_root_dir();
 }

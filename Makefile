@@ -4,8 +4,11 @@ all: disk node SBFS
 	$(CC) -Wall disk.o nodes.o SBFS.o -o main -lm
 	make clean
 	./main
+	rm main
+	
 disk:
 	$(CC) -Wall -c disk.c -o disk.o
+
 node:
 	$(CC) -Wall -c nodes.c -o nodes.o
 

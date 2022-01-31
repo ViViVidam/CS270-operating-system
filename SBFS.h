@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "nodes.h"
 
 #define MAX_FILENAME 64
 #define DIRECTORY 2
@@ -12,9 +13,9 @@ typedef struct
 } dir;
 
 uint64_t SBFS_open(char *filename, int mode);
-int SBFS_close(int node);
-uint64_t SBFS_mkdir(char *filename, inode *node);
-uint64_t SBFS_mknod(char *filename, inode *node);
+int SBFS_close(int inum);
+uint64_t SBFS_mkdir(char *path, inode *node);
+uint64_t SBFS_mknod(char *path, inode *node);
 
 uint64_t add_entry_to_dir(uint64_t inum,char* filename,uint64_t file_inode);
 

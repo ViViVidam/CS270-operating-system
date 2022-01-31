@@ -206,7 +206,7 @@ static int sb_release(const char *path, struct fuse_file_info *fi)
 /** Remove a file */
 static int sb_unlink(const char *path)
 {
-	printf("sb_unlink(path=\"%s\")\n", path);
+	printf("\nsb_unlink(path=\"%s\")\n", path);
 	int ret = SBFS_unlink(path);
 	return ret;
 }
@@ -214,7 +214,7 @@ static int sb_unlink(const char *path)
 /** Remove a directory */
 static int sb_rmdir(const char *path)
 {
-	printf("sb_rmdir(path=\"%s\")\n", path);
+	printf("\nsb_rmdir(path=\"%s\")\n", path);
 	//TODO: is the same SBFS_unlink file?
 	int ret = SBFS_unlink(path);
 	return ret;

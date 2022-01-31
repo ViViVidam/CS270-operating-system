@@ -54,6 +54,7 @@ uint64_t find_file_entry(uint64_t inum, char *filename)
 {
 	inode node;
 	read_inode(inum, &node);
+	assert(node.type == DIRECTORY);
 	int entry_count = node.size / sizeof(dir);
 	dir entry;
 	assert((node.size % sizeof(dir)) == 0);
@@ -97,12 +98,21 @@ uint64_t SBFS_namei(char *path)
 			printf("namei, failed to find path: %s %s", path, filename);
 			return 0; //cannot find inode
 		}
-		if (*pointer == '/')
+		//changed!!
+		if(*pointer == '/') {
+			inode node;
+			read_inode(inum, &node);
+			if(node.type != DIRECTORY) {
+				printf("\nit is not a dir\n");
+				return 0;
+			}
+		}
+		while (*pointer == '/')
 		{
 			i = 0;
 			pointer++;
 		}
-		else
+		if (*pointer == 0)
 			return inum;
 	}
 	//TODO: WHY?
@@ -222,9 +232,10 @@ return 0: can not mkdir
 uint64_t SBFS_mkdir(char *path, inode *node)
 {
 	int len = get_len(path);
-	if (*(path + len - 1) == '/')
+	while (*(path + len - 1) == '/')
 	{
 		*(path + len - 1) = 0;
+		--len;
 	}
 	//can not make new dir cause it exist
 	if (SBFS_namei(path) != 0)
@@ -236,7 +247,7 @@ uint64_t SBFS_mkdir(char *path, inode *node)
 
 	char *path_before_slash;
 	char dirname[MAX_FILENAME];
-	uint64_t parent_path_inum = 1;
+	uint64_t parent_path_inum = ROOT;
 
 	if (prev != -1)
 	{
@@ -293,7 +304,7 @@ uint64_t SBFS_mknod(char *path, inode *node)
 
 	char *path_before_slash;
 	char filename[MAX_FILENAME];
-	uint64_t parent_path_inum = 1;
+	uint64_t parent_path_inum = ROOT;
 
 	if (prev != -1)
 	{
@@ -333,18 +344,25 @@ uint64_t SBFS_mknod(char *path, inode *node)
 	return inum;
 }
 
-//TODO: delete from parent dir
+//TODO: delete from parent dir, used both for dir and file?
 int SBFS_unlink(char *path)
 {
 	inode node;
 	uint64_t inum = SBFS_namei(path);
 	printf("unlink %ld\n", inum);
+	if (inum == 0)
+	{
+		return -1;
+	}
 	read_inode(inum, &node);
+	//TODO: node is a dir?s
 	int item_count = node.size / sizeof(dir);
 	assert((node.size % sizeof(dir)) == 0);
 
 	dir entry;
 	int offset = 0;
+	uint64_t parent_path_inum = 1;
+
 	if (node.type == DIRECTORY)
 	{
 		for (int i = 0; i < item_count; i++)
@@ -358,7 +376,10 @@ int SBFS_unlink(char *path)
 			free_inode(entry.inum);
 		}
 	}
-	free_inode(inum);
+	else
+	{
+		free_inode(inum);
+	}
 	return 0;
 }
 

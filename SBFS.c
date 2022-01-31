@@ -80,7 +80,7 @@ uint64_t SBFS_namei(char *path)
 	{
 		return ROOT;
 	}
-	//TODO: WHY +1
+	// WHY +1
 	pointer += 1;
 	inum = ROOT;
 
@@ -116,7 +116,7 @@ uint64_t SBFS_namei(char *path)
 		if (*pointer == 0)
 			return inum;
 	}
-	//TODO: WHY?
+	
 	return 1; // the path end with /
 }
 
@@ -144,7 +144,7 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 		buffer += read_bytes;
 		size -= read_bytes;
 	}
-	return 0;
+	return size;
 }
 /* mode H_READ, don't create new block,mode H_CREATE create new block */
 
@@ -180,7 +180,7 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	node.size = MAX(node.size, upperbound);
 	write_inode(inum, &node);
 	read_inode(inum, &node);
-	return 0;
+	return size;
 }
 
 int find_slash(char *path, int pos)
@@ -283,7 +283,7 @@ uint64_t SBFS_mkdir(char *path, inode *node)
 	node->flag = 1;
 	write_inode(inum, node);
 
-	//TODO: write into parent dir
+	// write into parent dir
 	add_entry_to_dir(parent_path_inum, dirname, inum);
 
 	return inum;
@@ -339,13 +339,14 @@ uint64_t SBFS_mknod(char *path, inode *node)
 	node->size = 0;
 	write_inode(inum, node);
 
-	//TODO: write into parent dir
+	//write into parent dir
 	add_entry_to_dir(parent_path_inum, filename, inum);
 
 	return inum;
 }
 
 //TODO: delete from parent dir, used both for dir and file?
+
 // rmdir - remove empty directories
 int SBFS_rmdir(char *path) {
 

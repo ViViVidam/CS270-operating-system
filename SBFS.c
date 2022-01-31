@@ -80,6 +80,7 @@ uint64_t SBFS_namei(char *path)
 	{
 		return ROOT;
 	}
+	//TODO: WHY +1
 	pointer += 1;
 	inum = ROOT;
 
@@ -103,7 +104,7 @@ uint64_t SBFS_namei(char *path)
 			inode node;
 			read_inode(inum, &node);
 			if(node.type != DIRECTORY) {
-				printf("\nit is not a dir\n");
+				printf("%sit is not a dir\n", filename);
 				return 0;
 			}
 		}
@@ -345,6 +346,11 @@ uint64_t SBFS_mknod(char *path, inode *node)
 }
 
 //TODO: delete from parent dir, used both for dir and file?
+// rmdir - remove empty directories
+int SBFS_rmdir(char *path) {
+
+}
+
 int SBFS_unlink(char *path)
 {
 	inode node;

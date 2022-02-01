@@ -1,6 +1,6 @@
 CC = gcc
 
-all: disk node SBFS
+all: disk node SBFS fuse
 	$(CC) -Wall disk.o nodes.o SBFS.o -o main -lm
 	make clean
 	./main
@@ -13,8 +13,8 @@ SBFS:
 	$(CC) -Wall -c SBFS.c -o SBFS.o
 
 fuse:
-	$(CC) -Wall main.c `pkg-config fuse3 --cflags --libs` -o main
-	./main -f mount
+	$(CC) -Wall sbFuse.c `pkg-config fuse3 --cflags --libs` -o sbFuse
+	./sbFuse -f mount
 #makefuse:
 #	$(CC) -Wall main.c `pkg-config fuse3 --cflags --libs` -o main
 #	./main -f mount

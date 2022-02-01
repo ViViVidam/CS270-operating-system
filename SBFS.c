@@ -324,6 +324,7 @@ uint64_t SBFS_mknod(char *path, inode *node)
 	}
 	if (SBFS_namei(path) != 0)
 	{
+		printf("\npath: %s already exists\n", path);
 		return 0;
 	}
 	//prev is the position of the last slash

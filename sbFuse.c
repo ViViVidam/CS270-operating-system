@@ -3,8 +3,6 @@
 
 #define FUSE_USE_VERSION 31
 
-
-
 static void *sb_init(struct fuse_conn_info *conn,
 					 struct fuse_config *cfg)
 {
@@ -223,5 +221,5 @@ static int sb_rmdir(const char *path)
 
 int main(int argc, char *argv[])
 {
-  	return fuse_main(argc, argv, &sb_oper, NULL);
+	return fuse_main(argc, argv, &sb_oper, NULL);
 }

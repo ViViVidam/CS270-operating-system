@@ -400,7 +400,7 @@ int SBFS_rmdir(char *path)
 	uint64_t parent_dir_inum = find_parent_dir_inum(path);
 	delete_entry_in_dir(parent_dir_inum, inum);
 	free_inode(inum);
-	
+
 	return 0;
 }
 
@@ -408,35 +408,41 @@ int SBFS_unlink(char *path)
 {
 	inode node;
 	uint64_t inum = SBFS_namei(path);
-	printf("unlink %ld\n", inum);
+	
 	if (inum == 0)
 	{
+		print("\nlocate failed for path: %s\n", path);
 		return -1;
 	}
+	printf("unlink %ld\n", inum);
 	read_inode(inum, &node);
-	//TODO: node is a dir?s
+	
 	int item_count = node.size / sizeof(dir);
 	assert((node.size % sizeof(dir)) == 0);
 
 	dir entry;
 	int offset = 0;
-	uint64_t parent_path_inum = 1;
+	uint64_t parent_path_inum = ROOT;
 
-	if (node.type == DIRECTORY)
+	if (node.type != NORMAL)
 	{
-		for (int i = 0; i < item_count; i++)
-		{
-			int index = i * sizeof(dir) / BLOCKSIZE;
-			int offset = i * sizeof(dir) % BLOCKSIZE;
-			int block_id = block_id_helper(index, &node, H_READ);
-			assert(block_id != 0);
-			SBFS_read(block_id, offset, sizeof(dir), &entry);
-			assert(entry.inum != 0);
-			free_inode(entry.inum);
-		}
+		printf("\n%s is not a file\n", path);
+		return -1;
+		// for (int i = 0; i < item_count; i++)
+		// {
+		// 	int index = i * sizeof(dir) / BLOCKSIZE;
+		// 	int offset = i * sizeof(dir) % BLOCKSIZE;
+		// 	int block_id = block_id_helper(index, &node, H_READ);
+		// 	assert(block_id != 0);
+		// 	SBFS_read(block_id, offset, sizeof(dir), &entry);
+		// 	assert(entry.inum != 0);
+		// 	free_inode(entry.inum);
+		// }
 	}
 	else
 	{
+		uint64_t parent_dir_inum = find_parent_dir_inum(path);
+		delete_entry_from_dir(parent_path_inum, inum);
 		free_inode(inum);
 	}
 	return 0;

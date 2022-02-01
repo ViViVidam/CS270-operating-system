@@ -378,6 +378,10 @@ int delete_entry_from_dir(uint64_t dir_inum, uint64_t file_inum)
 	read_inode(dir_inum, &dir_node);
 }
 
+
+/******
+**  rmdir - remove empty directories
+******/
 int SBFS_rmdir(char *path)
 {
 	inode node;
@@ -404,11 +408,14 @@ int SBFS_rmdir(char *path)
 	return 0;
 }
 
+/******
+** unlink - call the unlink function to remove the specified file
+******/
 int SBFS_unlink(char *path)
 {
 	inode node;
 	uint64_t inum = SBFS_namei(path);
-	
+
 	if (inum == 0)
 	{
 		print("\nlocate failed for path: %s\n", path);
@@ -416,7 +423,7 @@ int SBFS_unlink(char *path)
 	}
 	printf("unlink %ld\n", inum);
 	read_inode(inum, &node);
-	
+
 	int item_count = node.size / sizeof(dir);
 	assert((node.size % sizeof(dir)) == 0);
 

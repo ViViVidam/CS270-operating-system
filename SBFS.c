@@ -100,10 +100,12 @@ uint64_t SBFS_namei(char *path)
 			return 0; //cannot find inode
 		}
 		//changed!!
-		if(*pointer == '/') {
+		if (*pointer == '/')
+		{
 			inode node;
 			read_inode(inum, &node);
-			if(node.type != DIRECTORY) {
+			if (node.type != DIRECTORY)
+			{
 				printf("%sit is not a dir\n", filename);
 				return 0;
 			}
@@ -116,7 +118,7 @@ uint64_t SBFS_namei(char *path)
 		if (*pointer == 0)
 			return inum;
 	}
-	
+
 	return 1; // the path end with /
 }
 
@@ -345,7 +347,8 @@ uint64_t SBFS_mknod(char *path, inode *node)
 	return inum;
 }
 
-uint64_t find_parent_dir_inum(char *path) {
+uint64_t find_parent_dir_inum(char *path)
+{
 	int len = get_len(path);
 
 	//prev is the position of the last slash
@@ -355,7 +358,8 @@ uint64_t find_parent_dir_inum(char *path) {
 	char filename[MAX_FILENAME];
 	uint64_t parent_path_inum = ROOT;
 
-	if(prev != -1) {
+	if (prev != -1)
+	{
 		memset(path_before_slash, 0, len);
 		memcpy(path_before_slash, path, prev);
 		parent_path_inum = SBFS_namei(path_before_slash);
@@ -364,19 +368,21 @@ uint64_t find_parent_dir_inum(char *path) {
 	return parent_path_inum;
 }
 
-
-
 // rmdir - remove empty directories
 
 //TODO: delete from parent dir
 
-int delete_entry_from_dir(uint64_t dir_inum, uint64_t file_inum) {
-
+int delete_entry_from_dir(uint64_t dir_inum, uint64_t file_inum)
+{
+	inode dir_node;
+	read_inode(dir_inum, &dir_node);
 }
-int SBFS_rmdir(char *path) {
+
+int SBFS_rmdir(char *path)
+{
 	inode node;
 	uint64_t inum = SBFS_namei(path);
-	
+
 	if (inum == 0)
 	{
 		print("\nlocate failed for path: %s\n", path);
@@ -385,14 +391,16 @@ int SBFS_rmdir(char *path) {
 	printf("rmdir %s: inum %ld\n", path, inum);
 
 	read_inode(inum, &node);
-	if(node.type != DIRECTORY || node.size != 0) {
+	if (node.type != DIRECTORY || node.size != 0)
+	{
 		printf("\npath: %s is not an empty directory.\n", path);
 		return -1;
 	}
 
 	uint64_t parent_dir_inum = find_parent_dir_inum(path);
 	delete_entry_in_dir(parent_dir_inum, inum);
-
+	free_inode(inum);
+	
 	return 0;
 }
 

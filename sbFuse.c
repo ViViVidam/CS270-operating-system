@@ -3,22 +3,7 @@
 
 #define FUSE_USE_VERSION 31
 
-static const struct fuse_operations sb_oper = {
-	.init = sb_init,
-	.getattr = sb_getattr,
-	.opendir = sb_opendir,
-	.readdir = sb_readdir,
-	.releasedir = sb_releasedir,
-	.open = sb_open,
-	.read = sb_read,
-	.write = sb_write,
-	.release = sb_release,
-	.mkdir = sb_mkdir,
-	.mknod = sb_mknod,
-	.unlink = sb_unlink,
-	.rmdir = sb_rmdir,
 
-};
 
 static void *sb_init(struct fuse_conn_info *conn,
 					 struct fuse_config *cfg)
@@ -210,6 +195,23 @@ static int sb_unlink(const char *path)
 	int ret = SBFS_unlink(path);
 	return ret;
 }
+
+static const struct fuse_operations sb_oper = {
+	.init = sb_init,
+	.getattr = sb_getattr,
+	.opendir = sb_opendir,
+	.readdir = sb_readdir,
+	.releasedir = sb_releasedir,
+	.open = sb_open,
+	.read = sb_read,
+	.write = sb_write,
+	.release = sb_release,
+	.mkdir = sb_mkdir,
+	.mknod = sb_mknod,
+	.unlink = sb_unlink,
+	.rmdir = sb_rmdir,
+
+};
 
 /** Remove a directory */
 static int sb_rmdir(const char *path)

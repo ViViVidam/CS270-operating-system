@@ -228,6 +228,27 @@ int get_len(char *path)
 	return len;
 }
 
+uint64_t find_parent_dir_inum(char *path)
+{
+	int len = get_len(path);
+
+	//prev is the position of the last slash
+	int prev = find_last_slash(path, len);
+
+	char path_before_slash[MAX_PATH];
+	char filename[MAX_FILENAME];
+	uint64_t parent_path_inum = ROOT;
+
+	if (prev != -1)
+	{
+		memcpy(path_before_slash, path, prev);
+		path_before_slash[prev] = 0;
+		parent_path_inum = SBFS_namei(path_before_slash);
+	}
+
+	return parent_path_inum;
+}
+
 /* direcotry is dir, the item is empty when inode = 0 */
 /*
 return 0: can not mkdir
@@ -243,22 +264,24 @@ uint64_t SBFS_mkdir(char *path, inode *node)
 	//can not make new dir cause it exist
 	if (SBFS_namei(path) != 0)
 	{
+		printf("\npath: %s has existed\n", path);
 		return 0;
 	}
 	//prev is the position of the last slash
 	int prev = find_last_slash(path, len);
 
-	char *path_before_slash;
+	char path_before_slash[MAX_PATH];
 	char dirname[MAX_FILENAME];
 	uint64_t parent_path_inum = ROOT;
 
 	if (prev != -1)
 	{
-		memset(path_before_slash, 0, len);
 		memcpy(path_before_slash, path, prev);
+		path_before_slash[prev] = 0;
 		parent_path_inum = SBFS_namei(path_before_slash);
 		if (parent_path_inum == 0)
 		{
+			printf("\n parent dir : %s does not exist \n", path_before_slash);
 			return 0;
 		}
 		else
@@ -267,6 +290,7 @@ uint64_t SBFS_mkdir(char *path, inode *node)
 			read_inode(parent_path_inum, &parent_node);
 			if (parent_node.type != DIRECTORY)
 			{
+				printf("\n parent dir : %s does not exist \n", path_before_slash);
 				return 0;
 			}
 		}
@@ -305,17 +329,18 @@ uint64_t SBFS_mknod(char *path, inode *node)
 	//prev is the position of the last slash
 	int prev = find_last_slash(path, len);
 
-	char *path_before_slash;
+	char path_before_slash[MAX_PATH];
 	char filename[MAX_FILENAME];
 	uint64_t parent_path_inum = ROOT;
 
 	if (prev != -1)
 	{
-		memset(path_before_slash, 0, len);
 		memcpy(path_before_slash, path, prev);
+		path_before_slash[prev] = 0;
 		parent_path_inum = SBFS_namei(path_before_slash);
 		if (parent_path_inum == 0)
 		{
+			printf("\n parent dir : %s does not exist \n", path_before_slash);
 			return 0;
 		}
 		else
@@ -324,6 +349,7 @@ uint64_t SBFS_mknod(char *path, inode *node)
 			read_inode(parent_path_inum, &parent_node);
 			if (parent_node.type != DIRECTORY)
 			{
+				printf("\n parent dir : %s does not exist \n", path_before_slash);
 				return 0;
 			}
 		}
@@ -347,27 +373,6 @@ uint64_t SBFS_mknod(char *path, inode *node)
 	return inum;
 }
 
-uint64_t find_parent_dir_inum(char *path)
-{
-	int len = get_len(path);
-
-	//prev is the position of the last slash
-	int prev = find_last_slash(path, len);
-
-	char *path_before_slash;
-	char filename[MAX_FILENAME];
-	uint64_t parent_path_inum = ROOT;
-
-	if (prev != -1)
-	{
-		memset(path_before_slash, 0, len);
-		memcpy(path_before_slash, path, prev);
-		parent_path_inum = SBFS_namei(path_before_slash);
-	}
-
-	return parent_path_inum;
-}
-
 // rmdir - remove empty directories
 
 //TODO: delete from parent dir
@@ -377,7 +382,6 @@ int delete_entry_from_dir(uint64_t dir_inum, uint64_t file_inum)
 	inode dir_node;
 	read_inode(dir_inum, &dir_node);
 }
-
 
 /******
 **  rmdir - remove empty directories

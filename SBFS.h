@@ -2,6 +2,7 @@
 #include "nodes.h"
 
 #define MAX_FILENAME 64
+#define MAX_PATH 1024
 #define DIRECTORY 2
 #define NORMAL 1
 #define ROOT 1

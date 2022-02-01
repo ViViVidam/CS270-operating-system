@@ -193,6 +193,13 @@ static int sb_unlink(const char *path)
 	int ret = SBFS_unlink(path);
 	return ret;
 }
+/** Remove a directory */
+static int sb_rmdir(const char *path)
+{
+	printf("\nsb_rmdir(path=\"%s\")\n", path);
+	int ret = SBFS_rmdir(path);
+	return ret;
+}
 
 static const struct fuse_operations sb_oper = {
 	.init = sb_init,
@@ -211,13 +218,7 @@ static const struct fuse_operations sb_oper = {
 
 };
 
-/** Remove a directory */
-static int sb_rmdir(const char *path)
-{
-	printf("\nsb_rmdir(path=\"%s\")\n", path);
-	int ret = SBFS_rmdir(path);
-	return ret;
-}
+
 
 int main(int argc, char *argv[])
 {

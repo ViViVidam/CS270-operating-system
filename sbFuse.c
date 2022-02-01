@@ -1,5 +1,5 @@
 #include "sbFuse.h"
-#include "libfuse/include/fuse.h"
+#include <fuse.h>
 
 #define FUSE_USE_VERSION 31
 
@@ -215,7 +215,6 @@ static int sb_unlink(const char *path)
 static int sb_rmdir(const char *path)
 {
 	printf("\nsb_rmdir(path=\"%s\")\n", path);
-	//TODO: is the same SBFS_unlink file?
 	int ret = SBFS_rmdir(path);
 	return ret;
 }

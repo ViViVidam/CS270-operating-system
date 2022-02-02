@@ -611,7 +611,7 @@ void create_root_dir()
 	write_inode(root, &root_node);
 }
 
-int main()
+/*int main()
 {
 	dir *entry;
 	SBFS_init();
@@ -634,4 +634,4 @@ int main()
     }
 	printf("%ld\n", allocate_inode());
 	return 0;
-}
+}*/

@@ -1,9 +1,8 @@
 
 #define FUSE_USE_VERSION 31
 
-#include "SBFS.h"
+#include "sbFuse.h"
 #include <fuse.h>
-#include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -147,7 +146,7 @@ static int sb_mknod(const char *path, mode_t mode, dev_t dev)
 static int sb_mkdir(const char *path, mode_t mode)
 {
 	printf("\nsb_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
-	int ret = SBFS_mkdir(path;
+	int ret = SBFS_mkdir(path);
 	if (ret == 0)
 	{
 		printf("mkdir failed");

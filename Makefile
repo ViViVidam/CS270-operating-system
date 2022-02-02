@@ -6,10 +6,10 @@ all: disk node SBFS
 	./main
 	rm main
 
-fuse: disk node SBFS
-	$(CC) -Wall -c sbFuse.c -o sbFuse.o
-	$(CC) -Wall sbFuse.o disk.o nodes.o SBFS.o `pkg-config fuse3 --cflags --libs` -o main
+fuse: disk.c nodes.c SBFS.c sbFuse.c
+	$(CC) -Wall disk.c nodes.c SBFS.c sbFuse.c -lm `pkg-config fuse3 --cflags --libs` -o main
 	./main -f mount
+	fusermount -u mount
 
 disk:
 	$(CC) -Wall -c disk.c -o disk.o

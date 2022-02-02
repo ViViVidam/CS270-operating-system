@@ -89,9 +89,10 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		{
 			dir *dr = SBFS_readdir(inum);
 
-			printf("add %s to filler\n", dr->filename);
+			
 			if (dr)
 			{
+				printf("add %s to filler\n", dr->filename);
 				filler(buf, dr->filename, NULL, 0, 0);
 			}
 			else

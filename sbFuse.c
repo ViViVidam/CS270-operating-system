@@ -89,7 +89,6 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		{
 			dir *dr = SBFS_readdir(inum);
 
-			
 			if (dr)
 			{
 				printf("add %s to filler\n", dr->filename);
@@ -147,7 +146,9 @@ static int sb_mknod(const char *path, mode_t mode, dev_t dev)
 	{
 		printf("mknod failed\n");
 		return -1;
-	} else {
+	}
+	else
+	{
 		printf("mknod successed\n");
 	}
 	return 0;
@@ -161,7 +162,9 @@ static int sb_mkdir(const char *path, mode_t mode)
 	{
 		printf("mkdir failed\n");
 		return -1;
-	} else {
+	}
+	else
+	{
 		printf("mkdir successed\n");
 	}
 	return 0;
@@ -221,6 +224,11 @@ static int sb_rmdir(const char *path)
 	return 0;
 }
 
+static int sb_utimens(const char *path, const struct timespec tv[2], struct fuse_file_info *fi)
+{
+	return 0;
+}
+
 static const struct fuse_operations sb_oper = {
 	.init = sb_init,
 	.getattr = sb_getattr,
@@ -235,6 +243,7 @@ static const struct fuse_operations sb_oper = {
 	.mknod = sb_mknod,
 	.unlink = sb_unlink,
 	.rmdir = sb_rmdir,
+	.utimens = sb_utimens,
 
 };
 

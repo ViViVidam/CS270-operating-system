@@ -82,7 +82,7 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		printf("add . to filler\n");
 		filler(buf, ".", NULL, 0, 0);
 
-		printf("add . to filler\n");
+		printf("add .. to filler\n");
 		filler(buf, "..", NULL, 0, 0);
 		// read file in path 1 by 1
 		while (1)
@@ -136,7 +136,7 @@ static int sb_releasedir(const char *path, struct fuse_file_info *fi)
 {
 	printf("\nsb_releasedir(path=\"%s\", fi=0x%08x)\n", path, fi);
 	int ret = SBFS_close(fi->fh);
-	return ret;
+	return 0;
 }
 
 static int sb_mknod(const char *path, mode_t mode, dev_t dev)
@@ -150,7 +150,7 @@ static int sb_mknod(const char *path, mode_t mode, dev_t dev)
 	} else {
 		printf("mknod successed\n");
 	}
-	return ret;
+	return 0;
 }
 
 static int sb_mkdir(const char *path, mode_t mode)
@@ -164,7 +164,7 @@ static int sb_mkdir(const char *path, mode_t mode)
 	} else {
 		printf("mkdir successed\n");
 	}
-	return ret;
+	return 0;
 }
 
 static int sb_open(const char *path, struct fuse_file_info *fi)
@@ -179,7 +179,7 @@ static int sb_open(const char *path, struct fuse_file_info *fi)
 	}
 	printf("set fi->fh = inum: %ld\n", inum);
 	fi->fh = inum;
-	return inum;
+	return 0;
 }
 
 static int sb_read(const char *path, char *buf, size_t size, off_t offset,
@@ -187,7 +187,7 @@ static int sb_read(const char *path, char *buf, size_t size, off_t offset,
 {
 	printf("\nsb_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi);
 	int ret = SBFS_read(fi->fh, offset, size, buf);
-	return ret;
+	return 0;
 }
 
 static int sb_write(const char *path, const char *buf, size_t size,
@@ -203,7 +203,7 @@ static int sb_release(const char *path, struct fuse_file_info *fi)
 {
 	printf("\nsb_release(path=\"%s\", fi=0x%08x)\n", path, fi);
 	int ret = SBFS_close(fi->fh);
-	return ret;
+	return 0;
 }
 
 /** Remove a file */
@@ -211,14 +211,14 @@ static int sb_unlink(const char *path)
 {
 	printf("\nsb_unlink(path=\"%s\")\n", path);
 	int ret = SBFS_unlink(path);
-	return ret;
+	return 0;
 }
 /** Remove a directory */
 static int sb_rmdir(const char *path)
 {
 	printf("\nsb_rmdir(path=\"%s\")\n", path);
 	int ret = SBFS_rmdir(path);
-	return ret;
+	return 0;
 }
 
 static const struct fuse_operations sb_oper = {

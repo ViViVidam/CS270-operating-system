@@ -641,22 +641,22 @@ void create_root_dir()
 	write_inode(root, &root_node);
 }
 
-int main()
-{
-	dir *entry;
-	inode node;
-	SBFS_init();
-	uint64_t inum = SBFS_mknod("testtest1", &node);
-	add_entry_to_dir(ROOT, "testtest1", inum);
-	inum = SBFS_mkdir("testtest2", &node);
-	add_entry_to_dir(ROOT, "testtest2", inum);
-	inum = SBFS_mknod("testtest3", &node);
-	add_entry_to_dir(ROOT, "testtest3", inum);
-	SBFS_unlink("/testtest2");
-	while (entry = SBFS_readdir(ROOT))
-	{
-		printf("%s %ld\n", entry->filename, entry->inum);
-	}
-	printf("%ld\n", allocate_inode());
-	return 0;
-}
+// int main()
+// {
+// 	dir *entry;
+// 	inode node;
+// 	SBFS_init();
+// 	uint64_t inum = SBFS_mknod("testtest1", &node);
+// 	add_entry_to_dir(ROOT, "testtest1", inum);
+// 	inum = SBFS_mkdir("testtest2", &node);
+// 	add_entry_to_dir(ROOT, "testtest2", inum);
+// 	inum = SBFS_mknod("testtest3", &node);
+// 	add_entry_to_dir(ROOT, "testtest3", inum);
+// 	SBFS_unlink("/testtest2");
+// 	while (entry = SBFS_readdir(ROOT))
+// 	{
+// 		printf("%s %ld\n", entry->filename, entry->inum);
+// 	}
+// 	printf("%ld\n", allocate_inode());
+// 	return 0;
+// }

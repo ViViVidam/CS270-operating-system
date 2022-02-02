@@ -459,27 +459,30 @@ void SBFS_init()
 	create_root_dir();
 }
 
-dir *SBFS_readdir(uint64_t inum)
+dir *SBFS_readdir(uint64_t inum,int init)
 {
+
 	static int i;
 	static int present_inum = -1;
 	static int item_count;
 	static inode node;
 	static dir entry;
-	if (inum != present_inum)
+	if (inum != present_inum || init == 1)
 	{
 		i = 0;
 		present_inum = inum;
 		read_inode(inum, &node);
 		assert(node.type == DIRECTORY);
-		item_count = node.size / sizeof(dir);
+        item_count = node.size / sizeof(dir);
 	}
+    printf("SBFS_readdir inum %ld itemcount %ld %ld\n",inum,node.size,item_count);
 	assert((node.size % sizeof(dir)) == 0);
 	while (1)
 	{
 		if (i >= item_count)
 			return NULL;
 		SBFS_readdir_raw(inum, i, &entry);
+        printf("diur %ld %s %ld\n",inum,entry.filename,entry.inum);
 		i += 1;
 		if (entry.inum != 0)
 		{
@@ -625,10 +628,7 @@ void create_root_dir()
 {
 	dir *entry;
 	SBFS_init();
-	uint64_t inum = SBFS_mkdir("/testtest1");
-    inum = SBFS_mkdir("/testtest2");
-    inum = SBFS_mkdir("/testtest1/abc");
-    inum = SBFS_mknod("/test123");
+    uint64_t inum = SBFS_mknod("/abc");
 	//add_entry_to_dir(ROOT, "testtest1", inum);
 	//inum = SBFS_mkdir("/testtest2", &node);
 	//add_entry_to_dir(ROOT, "testtest2", inum);
@@ -640,11 +640,5 @@ void create_root_dir()
 	{
 		printf("readdir %s %ld\n", entry->filename, entry->inum);
 	}
-    while (entry = SBFS_readdir(2))
-    {
-        printf("readdir %s %ld\n", entry->filename, entry->inum);
-    }
-	printf("%ld\n", allocate_inode());
 	return 0;
-}
-*/
+}*/

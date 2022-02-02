@@ -78,8 +78,10 @@ int delete_entry_from_dir(uint64_t dir_inum, uint64_t file_inum)
     for (i = 0; i < entries; i++)
     {
         SBFS_readdir_raw(dir_inum, i, &entry);
+        printf("entry num,%ld\n",entry.inum);
         if (entry.inum == file_inum)
         {
+            printf("%ld\n",i);
             entry.inum = 0;
             SBFS_write(dir_inum, i * sizeof(entry), sizeof(entry), &entry);
             return i;
@@ -250,18 +252,18 @@ int find_last_slash(char *path, int len)
 
 uint64_t find_parent_dir_inum(char *path)
 {
+    printf("find parent dir\n");
     char parent_path[MAX_PATH];
-    if (SBFS_namei(path) != 0)
-    {
-        return 0;
-    }
     int len = strlen(path);
     int i = 0;
     while (*(path + len - 1) != '/'){
         len--;
     }
-    memcpy(parent_path,path,len-1);
-    parent_path[len] = 0;
+    memcpy(parent_path,path,len);
+    if(len==1)
+        parent_path[len] = 0;
+    else
+        parent_path[len-1] = 0;
     char* filename = path + len;
     printf("path %s filename %s\n",parent_path,filename);
     uint64_t parent_path_inum = SBFS_namei(parent_path);
@@ -283,8 +285,11 @@ uint64_t SBFS_mkdir(char *path)
 	while (*(path + len - 1) != '/'){
 		len--;
 	}
-    memcpy(parent_path,path,len-1);
-    parent_path[len] = 0;
+    memcpy(parent_path,path,len);
+    if(len==1)
+        parent_path[len] = 0;
+    else
+        parent_path[len-1] = 0;
     char* filename = path + len;
     printf("path %s filename %s\n",parent_path,filename);
     uint64_t parent_path_inum = SBFS_namei(parent_path);
@@ -328,8 +333,11 @@ uint64_t SBFS_mknod(char *path)
     while (*(path + len - 1) != '/'){
         len--;
     }
-    memcpy(parent_path,path,len-1);
-    parent_path[len] = 0;
+    memcpy(parent_path,path,len);
+    if(len==1)
+        parent_path[len] = 0;
+    else
+        parent_path[len-1] = 0;
     char* filename = path + len;
     printf("path %s filename %s\n",parent_path,filename);
     uint64_t parent_path_inum = SBFS_namei(parent_path);
@@ -389,6 +397,7 @@ int SBFS_rmdir(char *path)
 	}
 
 	uint64_t parent_dir_inum = find_parent_dir_inum(path);
+    printf("rmdir %ld: inum %ld\n", parent_dir_inum, inum);
     delete_entry_from_dir(parent_dir_inum, inum);
 	free_inode(inum);
 	return 0;
@@ -415,7 +424,7 @@ int SBFS_unlink(char *path)
 
 	dir entry;
 	int offset = 0;
-	uint64_t parent_path_inum = ROOT;
+	uint64_t parent_path_inum ;
 
 	if (node.type != NORMAL)
 	{
@@ -616,12 +625,14 @@ void create_root_dir()
 	uint64_t inum = SBFS_mkdir("/testtest1");
     inum = SBFS_mkdir("/testtest2");
     inum = SBFS_mkdir("/testtest1/abc");
+    inum = SBFS_mknod("/test123");
 	//add_entry_to_dir(ROOT, "testtest1", inum);
 	//inum = SBFS_mkdir("/testtest2", &node);
 	//add_entry_to_dir(ROOT, "testtest2", inum);
 	//inum = SBFS_mknod("/testtest3", &node);
 	//add_entry_to_dir(ROOT, "testtest3", inum);
-	//SBFS_unlink("/testtest2");
+	SBFS_rmdir("/testtest2");
+    SBFS_unlink("/test123");
 	while (entry = SBFS_readdir(ROOT))
 	{
 		printf("readdir %s %ld\n", entry->filename, entry->inum);
@@ -632,4 +643,5 @@ void create_root_dir()
     }
 	printf("%ld\n", allocate_inode());
 	return 0;
-}*/
+}
+*/

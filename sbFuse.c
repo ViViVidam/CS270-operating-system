@@ -192,7 +192,7 @@ static int sb_read(const char *path, char *buf, size_t size, off_t offset,
 {
 	printf("\nsb_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi);
 	int ret = SBFS_read(fi->fh, offset, size, buf);
-	return 0;
+	return size;
 }
 
 static int sb_write(const char *path, const char *buf, size_t size,
@@ -200,15 +200,22 @@ static int sb_write(const char *path, const char *buf, size_t size,
 {
 	printf("\nsb_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
 		   path, buf, size, offset, fi);
-	int ret = SBFS_write(fi->fh, offset, size, buf);
-	return ret;
+    uint64_t inum = SBFS_namei(path);
+    if( inum == 0)
+        return 0;
+    printf("inunm %ld\n",inum);
+	int ret = SBFS_write(inum, offset, size, buf);
+    char temp[4096];
+    SBFS_read(inum, offset, size, temp);
+    printf("%s\n",temp);
+	return size;
 }
 
 static int sb_release(const char *path, struct fuse_file_info *fi)
 {
 	printf("\nsb_release(path=\"%s\", fi=0x%08x)\n", path, fi);
-	int ret = SBFS_close(fi->fh);
-	return 0;
+	int ret = SBFS_close(SBFS_namei(path));
+	return 1;
 }
 
 /** Remove a file */

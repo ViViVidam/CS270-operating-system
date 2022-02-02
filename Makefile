@@ -6,9 +6,16 @@ all: disk node SBFS
 	./main
 	rm main
 
+run:  disk.c nodes.c SBFS.c sbFuse.c
+	$(CC) -Wall disk.c nodes.c SBFS.c sbFuse.c -lm `pkg-config fuse3 --cflags --libs` -o main
+	./main mount
+	echo "int main(printf(\"hello world\\n\");){};" > mount/hello
+	fusermount -u mount
+
 fuse: disk.c nodes.c SBFS.c sbFuse.c
 	$(CC) -Wall disk.c nodes.c SBFS.c sbFuse.c -lm `pkg-config fuse3 --cflags --libs` -o main
 	./main -f mount
+	echo "int main(printf(\"hello world\\n\");){};" > mount/hello
 	fusermount -u mount
 
 disk:

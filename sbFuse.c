@@ -34,13 +34,14 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 	stbuf->st_mtime = time(NULL);
 
 	uint64_t inum = SBFS_namei(path);
-    if(inum==0)
+    if(inum == 0)
         return -ENOENT;
     else
         printf("inum %ld\n",inum);
 	fi->fh = inum;
 	inode node;
 	read_inode(inum, &node);
+	printf("read node inum %ld\n", inum);
 	if (node.type == DIRECTORY)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;

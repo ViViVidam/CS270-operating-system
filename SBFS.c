@@ -394,7 +394,7 @@ int SBFS_rmdir(char *path)
 
 	if (inum == 0)
 	{
-		print("\nlocate failed for path: %s\n", path);
+		printf("\nlocate failed for path: %s\n", path);
 		return -1;
 	}
 	printf("rmdir %s: inum %ld\n", path, inum);
@@ -407,7 +407,7 @@ int SBFS_rmdir(char *path)
 	}
 
 	uint64_t parent_dir_inum = find_parent_dir_inum(path);
-	delete_entry_in_dir(parent_dir_inum, inum);
+	delete_entry_from_dir(parent_dir_inum, inum);
 	free_inode(inum);
 
 	return 0;
@@ -423,7 +423,7 @@ int SBFS_unlink(char *path)
 
 	if (inum == 0)
 	{
-		print("\nlocate failed for path: %s\n", path);
+		printf("\nlocate failed for path: %s\n", path);
 		return -1;
 	}
 	printf("unlink %ld\n", inum);

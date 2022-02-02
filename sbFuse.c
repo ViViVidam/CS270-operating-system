@@ -1,7 +1,6 @@
-
 #define FUSE_USE_VERSION 31
 
-#include "sbFuse.h"
+#include "SBFS.h"
 #include <fuse.h>
 #include <string.h>
 #include <errno.h>
@@ -35,10 +34,17 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 	stbuf->st_mtime = time(NULL);
 
 	uint64_t inum = SBFS_namei(path);
+    if(inum==0)
+        return -ENOENT;
+    else
+        printf("inum %ld\n",inum);
+    printf("begin reading\n");
 	fi->fh = inum;
+    printf("begin reading\n");
 	inode node;
+    printf("begin reading\n");
 	read_inode(inum, &node);
-
+    printf("read done\n");
 	if (node.type == DIRECTORY)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;

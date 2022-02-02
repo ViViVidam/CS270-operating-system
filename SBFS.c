@@ -391,7 +391,6 @@ int SBFS_rmdir(char *path)
 	uint64_t parent_dir_inum = find_parent_dir_inum(path);
     delete_entry_from_dir(parent_dir_inum, inum);
 	free_inode(inum);
-
 	return 0;
 }
 
@@ -610,7 +609,6 @@ void create_root_dir()
 	root_node.type = DIRECTORY;
 	write_inode(root, &root_node);
 }
-
 /*int main()
 {
 	dir *entry;

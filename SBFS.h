@@ -20,6 +20,7 @@ uint64_t SBFS_mknod(char *path);
 int SBFS_rmdir(char* path);
 uint64_t add_entry_to_dir(uint64_t inum,char* filename,uint64_t file_inode);
 
+int SBFS_rmdir(char *path);
 int SBFS_unlink(char *path);
 dir *SBFS_readdir(uint64_t inum);
 uint64_t SBFS_namei(char *path);

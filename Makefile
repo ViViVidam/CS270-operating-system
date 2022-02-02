@@ -12,8 +12,9 @@ node:
 SBFS:
 	$(CC) -Wall -c SBFS.c -o SBFS.o
 
-fuse:
-	$(CC) -Wall sbFuse.c `pkg-config fuse3 --cflags --libs` -o sbFuse
+fuse: disk node SBFS
+	$(CC) -Wall sbFuse.c `pkg-config fuse3 --cflags --libs` -o sbFuse.o
+	$(CC) -o sbFuse disk.o nodes.o SBFS.o sbFuse.o
 	./sbFuse -f mount
 #makefuse:
 #	$(CC) -Wall main.c `pkg-config fuse3 --cflags --libs` -o main

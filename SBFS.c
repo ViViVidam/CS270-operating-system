@@ -266,7 +266,7 @@ uint64_t find_parent_dir_inum(char *path)
 	{
 		len--;
 	}
-	memcpy(parent_path, path, len - 1);
+	memcpy(parent_path, path, len);
 	parent_path[len] = 0;
 	char *filename = path + len;
 	printf("path %s filename %s\n", parent_path, filename);

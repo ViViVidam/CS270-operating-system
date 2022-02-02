@@ -20,7 +20,6 @@ node:
 SBFS:
 	$(CC) -Wall -c SBFS.c -o SBFS.o
 
-
 #makefuse:
 #	$(CC) -Wall main.c `pkg-config fuse3 --cflags --libs` -o main
 #	./main -f mount

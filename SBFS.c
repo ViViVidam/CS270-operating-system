@@ -67,6 +67,27 @@ uint64_t add_entry_to_dir(uint64_t dir_inum, char *filename, uint64_t file_inum)
 	return i;
 }
 
+int delete_entry_from_dir(uint64_t dir_inum, uint64_t file_inum)
+{
+    inode node;
+    dir entry;
+    read_inode(dir_inum, &node);
+    int entries = node.size / sizeof(dir);
+    assert(node.size % sizeof(dir) == 0);
+    int i = 0;
+    for (i = 0; i < entries; i++)
+    {
+        SBFS_readdir_raw(dir_inum, i, &entry);
+        if (entry.inum == file_inum)
+        {
+            entry.inum = 0;
+            SBFS_write(dir_inum, i * sizeof(entry), sizeof(entry), &entry);
+            return i;
+        }
+    }
+    return -1;
+}
+
 uint64_t find_file_entry(uint64_t inum, char *filename)
 {
 	inode node;
@@ -114,10 +135,12 @@ uint64_t SBFS_namei(char *path)
 			return 0; //cannot find inode
 		}
 		//changed!!
-		if(*pointer == '/') {
+		if (*pointer == '/')
+		{
 			inode node;
 			read_inode(inum, &node);
-			if(node.type != DIRECTORY) {
+			if (node.type != DIRECTORY)
+			{
 				printf("%sit is not a dir\n", filename);
 				return 0;
 			}
@@ -159,6 +182,7 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 		size -= read_bytes;
 	}
 	return pre_size;
+
 }
 /* mode H_READ, don't create new block,mode H_CREATE create new block
  * the corresponding inode where and what size
@@ -190,9 +214,59 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf){
 	node.size = MAX(node.size, upperbound);
 	write_inode(inum, &node);
 	read_inode(inum, &node);
-	return 0;
+	return size;
 }
 
+int find_slash(char *path, int pos)
+{
+	char *pointer = path + pos;
+	int res = pos;
+	while (*pointer != 0 && *pointer != '/')
+	{
+		++res;
+		pointer++;
+	}
+	if (*pointer == 0)
+	{
+		return -1;
+	}
+	return res;
+}
+
+int find_last_slash(char *path, int len)
+{
+	int prev = -1;
+	int pos = find_slash(path, 0);
+	while (pos != -1)
+	{
+		if (pos < len)
+		{
+			prev = pos;
+			pos = find_slash(path, pos + 1);
+		}
+	}
+	return prev;
+}
+
+uint64_t find_parent_dir_inum(char *path)
+{
+    char parent_path[MAX_PATH];
+    if (SBFS_namei(path) != 0)
+    {
+        return 0;
+    }
+    int len = strlen(path);
+    int i = 0;
+    while (*(path + len - 1) != '/'){
+        len--;
+    }
+    memcpy(parent_path,path,len-1);
+    parent_path[len] = 0;
+    char* filename = path + len;
+    printf("path %s filename %s\n",parent_path,filename);
+    uint64_t parent_path_inum = SBFS_namei(parent_path);
+    return parent_path_inum;
+}
 /* direcotry is dir, the item is empty when inode = 0 */
 /*
 return 0: can not mkdir
@@ -286,43 +360,73 @@ uint64_t SBFS_mknod(char *path)
     }
 	return child_inum;
 }
-
-
-//TODO: delete from parent dir, used both for dir and file?
 // rmdir - remove empty directories
-int SBFS_rmdir(char *path) {
 
+//TODO: delete from parent dir
+
+
+
+/******
+**  rmdir - remove empty directories
+******/
+int SBFS_rmdir(char *path)
+{
+	inode node;
+	uint64_t inum = SBFS_namei(path);
+
+	if (inum == 0)
+	{
+		printf("\nlocate failed for path: %s\n", path);
+		return -1;
+	}
+	printf("rmdir %s: inum %ld\n", path, inum);
+
+	read_inode(inum, &node);
+	if (node.type != DIRECTORY || node.size != 0)
+	{
+		printf("\npath: %s is not an empty directory.\n", path);
+		return -1;
+	}
+
+	uint64_t parent_dir_inum = find_parent_dir_inum(path);
+    delete_entry_from_dir(parent_dir_inum, inum);
+	free_inode(inum);
+
+	return 0;
 }
 
+/******
+** unlink - call the unlink function to remove the specified file
+******/
 int SBFS_unlink(char *path)
 {
 	inode node;
 	uint64_t inum = SBFS_namei(path);
-	printf("unlink %ld\n", inum);
+
 	if (inum == 0)
 	{
+		printf("\nlocate failed for path: %s\n", path);
 		return -1;
 	}
+	printf("unlink %ld\n", inum);
 	read_inode(inum, &node);
-	//TODO: node is a dir?s
+
 	int item_count = node.size / sizeof(dir);
 	assert((node.size % sizeof(dir)) == 0);
 
 	dir entry;
 	int offset = 0;
-	uint64_t parent_path_inum = 1;
+	uint64_t parent_path_inum = ROOT;
 
-	if (node.type == DIRECTORY)
+	if (node.type != NORMAL)
 	{
-		for (int i = 0; i < item_count; i++)
-		{
-			SBFS_read(inum, i * sizeof(dir), sizeof(dir), &entry);
-			assert(entry.inum != 0);
-			free_inode(entry.inum);
-		}
+		printf("\n%s is not a file\n", path);
+		return -1;
 	}
 	else
 	{
+		uint64_t parent_dir_inum = find_parent_dir_inum(path);
+		delete_entry_from_dir(parent_path_inum, inum);
 		free_inode(inum);
 	}
 	return 0;

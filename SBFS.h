@@ -2,6 +2,7 @@
 #include "nodes.h"
 
 #define MAX_FILENAME 64
+#define MAX_PATH 1024
 #define DIRECTORY 2
 #define NORMAL 1
 #define ROOT 1
@@ -16,7 +17,7 @@ uint64_t SBFS_open(char *filename, int mode);
 int SBFS_close(int inum);
 uint64_t SBFS_mkdir(char *path);
 uint64_t SBFS_mknod(char *path);
-
+int SBFS_rmdir(char* path);
 uint64_t add_entry_to_dir(uint64_t inum,char* filename,uint64_t file_inode);
 
 int SBFS_unlink(char *path);

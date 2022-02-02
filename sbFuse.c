@@ -1,3 +1,7 @@
+
+#define FUSE_USE_VERSION 31
+
+#include "SBFS.h"
 #include <fuse.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,24 +9,7 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <assert.h>
-#define FUSE_USE_VERSION 31
-
-static const struct fuse_operations sb_oper = {
-	.init = sb_init,
-	.getattr = sb_getattr,
-	.opendir = sb_opendir,
-	.readdir = sb_readdir,
-	.releasedir = sb_releasedir,
-	.open = sb_open,
-	.read = sb_read,
-	.write = sb_write,
-	.release = sb_release,
-	.mkdir = sb_mkdir,
-	.mknod = sb_mknod,
-	.unlink = sb_unlink,
-	.rmdir = sb_rmdir,
-
-};
+#include <unistd.h>
 
 static void *sb_init(struct fuse_conn_info *conn,
 					 struct fuse_config *cfg)
@@ -68,6 +55,8 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 
 	return 0;
 }
+
+
 
 static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 					  off_t offset, struct fuse_file_info *fi,
@@ -138,7 +127,7 @@ static int sb_opendir(const char *path, struct fuse_file_info *fi)
 
 static int sb_releasedir(const char *path, struct fuse_file_info *fi)
 {
-	printf("\nbb_releasedir(path=\"%s\", fi=0x%08x)\n", path, fi);
+	printf("\nsb_releasedir(path=\"%s\", fi=0x%08x)\n", path, fi);
 	int ret = SBFS_close(fi->fh);
 	return ret;
 }
@@ -146,8 +135,7 @@ static int sb_releasedir(const char *path, struct fuse_file_info *fi)
 static int sb_mknod(const char *path, mode_t mode, dev_t dev)
 {
 	printf("\nsb_mknod(path=\"%s\", mode=0%3o, dev=%lld)\n", path, mode, dev);
-	inode node;
-	int ret = SBFS_mknod(path, &node);
+	int ret = SBFS_mknod(path);
 	if (ret == 0)
 	{
 		printf("mknod failed");
@@ -159,8 +147,7 @@ static int sb_mknod(const char *path, mode_t mode, dev_t dev)
 static int sb_mkdir(const char *path, mode_t mode)
 {
 	printf("\nsb_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
-	inode node;
-	int ret = SBFS_mkdir(path, &node);
+	int ret = SBFS_mkdir(path;
 	if (ret == 0)
 	{
 		printf("mkdir failed");
@@ -214,17 +201,34 @@ static int sb_unlink(const char *path)
 	int ret = SBFS_unlink(path);
 	return ret;
 }
-
 /** Remove a directory */
 static int sb_rmdir(const char *path)
 {
 	printf("\nsb_rmdir(path=\"%s\")\n", path);
-	//TODO: is the same SBFS_unlink file?
 	int ret = SBFS_rmdir(path);
 	return ret;
 }
 
+static const struct fuse_operations sb_oper = {
+	.init = sb_init,
+	.getattr = sb_getattr,
+	.opendir = sb_opendir,
+	.readdir = sb_readdir,
+	.releasedir = sb_releasedir,
+	.open = sb_open,
+	.read = sb_read,
+	.write = sb_write,
+	.release = sb_release,
+	.mkdir = sb_mkdir,
+	.mknod = sb_mknod,
+	.unlink = sb_unlink,
+	.rmdir = sb_rmdir,
+
+};
+
+
+
 int main(int argc, char *argv[])
 {
-  return fuse_main(argc, argv, &sb_oper, NULL);
+	return fuse_main(argc, argv, &sb_oper, NULL);
 }

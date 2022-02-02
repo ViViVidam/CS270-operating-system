@@ -34,13 +34,14 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 	stbuf->st_mtime = time(NULL);
 
 	uint64_t inum = SBFS_namei(path);
-    if(inum==0)
-        return -ENOENT;
-    else
-        printf("inum %ld\n",inum);
+	if (inum == 0)
+		return -ENOENT;
+	else
+		printf("inum %ld\n", inum);
 	//fi->fh = inum;
 	inode node;
 	read_inode(inum, &node);
+	printf("read node inum %ld\n", inum);
 	if (node.type == DIRECTORY)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
@@ -56,8 +57,6 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 
 	return 0;
 }
-
-
 
 static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 					  off_t offset, struct fuse_file_info *fi,
@@ -75,7 +74,7 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	if (node.type != DIRECTORY)
 	{
-		printf("read dir failed.");
+		printf("read dir failed.\n");
 		return -1;
 	}
 	else
@@ -108,16 +107,17 @@ static int sb_opendir(const char *path, struct fuse_file_info *fi)
 	//wrong inum
 	if (inum == 0)
 	{
-		printf("open dir failed.");
+		printf("open dir failed.\n");
 		return -1;
 	}
+	printf("set fi->fh = inum: %ld\n", inum);
 	fi->fh = inum;
 	inode node;
 	read_inode(inum, &node);
 
 	if (node.type != DIRECTORY)
 	{
-		printf("open dir failed.");
+		printf("open dir failed.\n");
 		return -1;
 	}
 	else
@@ -139,8 +139,10 @@ static int sb_mknod(const char *path, mode_t mode, dev_t dev)
 	int ret = SBFS_mknod(path);
 	if (ret == 0)
 	{
-		printf("mknod failed");
+		printf("mknod failed\n");
 		return -1;
+	} else {
+		printf("mknod successed\n");
 	}
 	return ret;
 }
@@ -151,8 +153,10 @@ static int sb_mkdir(const char *path, mode_t mode)
 	int ret = SBFS_mkdir(path);
 	if (ret == 0)
 	{
-		printf("mkdir failed");
+		printf("mkdir failed\n");
 		return -1;
+	} else {
+		printf("mkdir successed\n");
 	}
 	return ret;
 }
@@ -164,9 +168,10 @@ static int sb_open(const char *path, struct fuse_file_info *fi)
 	uint64_t inum = SBFS_open(path, 1);
 	if (inum == 0)
 	{
-		printf("open failed");
+		printf("open failed\n");
 		return -1;
 	}
+	printf("set fi->fh = inum: %ld\n", inum);
 	fi->fh = inum;
 	return inum;
 }
@@ -226,8 +231,6 @@ static const struct fuse_operations sb_oper = {
 	.rmdir = sb_rmdir,
 
 };
-
-
 
 int main(int argc, char *argv[])
 {

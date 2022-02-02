@@ -33,6 +33,10 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 	stbuf->st_mtime = time(NULL);
 
 	uint64_t inum = SBFS_namei(path);
+	
+	if(inum == 0) {
+		return -1;
+	}
 	fi->fh = inum;
 	inode node;
 	read_inode(inum, &node);

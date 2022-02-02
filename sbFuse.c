@@ -71,7 +71,7 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	uint64_t inum = fi->fh;
 	inode node;
 	read_inode(inum, &node);
-
+    printf("npde size %ld %ld\n",inum,node.size);
 	if (node.type != DIRECTORY)
 	{
 		printf("read dir failed.\n");
@@ -88,7 +88,7 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		while (1)
 		{	
 			printf("call readdir on inum %ld\n", inum);
-			dir *dr = SBFS_readdir(inum);
+			dir *dr = SBFS_readdir(inum,0);
 			printf("get dir pointer: 0x%08x\n", dr);
 			if (dr)
 			{
@@ -97,11 +97,12 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			}
 			else
 			{
+                printf("dir null\n");
 				break;
 			}
 		}
 	}
-
+    SBFS_readdir(0,1);
 	return 0;
 }
 

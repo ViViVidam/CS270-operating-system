@@ -1,7 +1,10 @@
 #define FUSE_USE_VERSION 31
 
-#include "sbFuse.h"
+#include <stdio.h>
 #include <fuse.h>
+#include "SBFS.h"
+#include "sbFuse.h"
+
 
 
 

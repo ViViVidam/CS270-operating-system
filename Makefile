@@ -13,7 +13,7 @@ SBFS:
 	$(CC) -Wall -c SBFS.c -o SBFS.o
 
 fuse:
-	$(CC) -Wall sbFuse.c `pkg-config fuse --cflags --libs` -o sbFuse
+	$(CC) -Wall sbFuse.c `pkg-config fuse3 --cflags --libs` -o sbFuse
 	./sbFuse -f mount
 #makefuse:
 #	$(CC) -Wall main.c `pkg-config fuse3 --cflags --libs` -o main

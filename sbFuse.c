@@ -1,7 +1,9 @@
+#define FUSE_USE_VERSION 31
+
 #include "sbFuse.h"
 #include <fuse.h>
 
-#define FUSE_USE_VERSION 31
+
 
 static void *sb_init(struct fuse_conn_info *conn,
 					 struct fuse_config *cfg)

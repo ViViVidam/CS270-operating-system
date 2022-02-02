@@ -15,31 +15,36 @@ uint64_t block_id_helper(inode *node, int index, int mode);
 void SBFS_readdir_raw(uint64_t inum, int entry_index, dir *entry);
 void create_root_dir();
 
-char* SBFS_clean_path(char *path){
-    int state = 0;
-    char tmp[4096];
-    int i = 0;
-    while( *path != 0){
-        if(state == 0) {
-            if (*path == '/') {
-                state = 1;
-
-            }
-            tmp[i++] = *path;
-        }
-        else {
-            if(*path!='/') {
-                tmp[i++] = *path;
-                state = 0;
-            }
-        }
-        path += 1;
-    }
-    tmp[i] = 0;
+char *SBFS_clean_path(char *path)
+{
+	int state = 0;
+	char tmp[4096];
+	int i = 0;
+	while (*path != 0)
+	{
+		if (state == 0)
+		{
+			if (*path == '/')
+			{
+				state = 1;
+			}
+			tmp[i++] = *path;
+		}
+		else
+		{
+			if (*path != '/')
+			{
+				tmp[i++] = *path;
+				state = 0;
+			}
+		}
+		path += 1;
+	}
+	tmp[i] = 0;
 }
 void SBFS_readdir_raw(uint64_t inum, int entry_index, dir *entry)
 {
-    SBFS_read(inum, entry_index * sizeof (dir), sizeof(dir), entry);
+	SBFS_read(inum, entry_index * sizeof(dir), sizeof(dir), entry);
 }
 
 uint64_t add_entry_to_dir(uint64_t dir_inum, char *filename, uint64_t file_inum)
@@ -69,23 +74,23 @@ uint64_t add_entry_to_dir(uint64_t dir_inum, char *filename, uint64_t file_inum)
 
 int delete_entry_from_dir(uint64_t dir_inum, uint64_t file_inum)
 {
-    inode node;
-    dir entry;
-    read_inode(dir_inum, &node);
-    int entries = node.size / sizeof(dir);
-    assert(node.size % sizeof(dir) == 0);
-    int i = 0;
-    for (i = 0; i < entries; i++)
-    {
-        SBFS_readdir_raw(dir_inum, i, &entry);
-        if (entry.inum == file_inum)
-        {
-            entry.inum = 0;
-            SBFS_write(dir_inum, i * sizeof(entry), sizeof(entry), &entry);
-            return i;
-        }
-    }
-    return -1;
+	inode node;
+	dir entry;
+	read_inode(dir_inum, &node);
+	int entries = node.size / sizeof(dir);
+	assert(node.size % sizeof(dir) == 0);
+	int i = 0;
+	for (i = 0; i < entries; i++)
+	{
+		SBFS_readdir_raw(dir_inum, i, &entry);
+		if (entry.inum == file_inum)
+		{
+			entry.inum = 0;
+			SBFS_write(dir_inum, i * sizeof(entry), sizeof(entry), &entry);
+			return i;
+		}
+	}
+	return -1;
 }
 
 uint64_t find_file_entry(uint64_t inum, char *filename)
@@ -162,9 +167,9 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	char *buffer = (char *)buf;
 	inode node;
 	read_inode(inum, &node);
-    int64_t pre_size = size;
+	int64_t pre_size = size;
 
-    int start = block_id_helper(&node,offset / BLOCKSIZE,H_READ);
+	int start = block_id_helper(&node, offset / BLOCKSIZE, H_READ);
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
 
@@ -182,19 +187,19 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 		size -= read_bytes;
 	}
 	return pre_size;
-
 }
 /* mode H_READ, don't create new block,mode H_CREATE create new block
  * the corresponding inode where and what size
  * */
 
-int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf){
+int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
+{
 	inode node;
 	read_inode(inum, &node);
 
 	char *buffer = (char *)buf;
 	uint64_t upperbound = size + offset;
-	int start = block_id_helper(&node,offset / BLOCKSIZE,H_CREATE);
+	int start = block_id_helper(&node, offset / BLOCKSIZE, H_CREATE);
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
 
@@ -250,22 +255,23 @@ int find_last_slash(char *path, int len)
 
 uint64_t find_parent_dir_inum(char *path)
 {
-    char parent_path[MAX_PATH];
-    if (SBFS_namei(path) != 0)
-    {
-        return 0;
-    }
-    int len = strlen(path);
-    int i = 0;
-    while (*(path + len - 1) != '/'){
-        len--;
-    }
-    memcpy(parent_path,path,len-1);
-    parent_path[len] = 0;
-    char* filename = path + len;
-    printf("path %s filename %s\n",parent_path,filename);
-    uint64_t parent_path_inum = SBFS_namei(parent_path);
-    return parent_path_inum;
+	char parent_path[MAX_PATH];
+	if (SBFS_namei(path) != 0)
+	{
+		return 0;
+	}
+	int len = strlen(path);
+	int i = 0;
+	while (*(path + len - 1) != '/')
+	{
+		len--;
+	}
+	memcpy(parent_path, path, len - 1);
+	parent_path[len] = 0;
+	char *filename = path + len;
+	printf("path %s filename %s\n", parent_path, filename);
+	uint64_t parent_path_inum = SBFS_namei(parent_path);
+	return parent_path_inum;
 }
 /* direcotry is dir, the item is empty when inode = 0 */
 /*
@@ -273,98 +279,98 @@ return 0: can not mkdir
 */
 uint64_t SBFS_mkdir(char *path)
 {
-    char parent_path[5*MAX_FILENAME];
-    if (SBFS_namei(path) != 0)
-    {
-        return 0;
-    }
+	char parent_path[5 * MAX_FILENAME];
+	if (SBFS_namei(path) != 0)
+	{
+		return 0;
+	}
 	int len = strlen(path);
-    int i = 0;
-	while (*(path + len - 1) != '/'){
+	int i = 0;
+	while (*(path + len - 1) != '/')
+	{
 		len--;
 	}
-    memcpy(parent_path,path,len-1);
-    parent_path[len] = 0;
-    char* filename = path + len;
-    printf("path %s filename %s\n",parent_path,filename);
-    uint64_t parent_path_inum = SBFS_namei(parent_path);
-    uint64_t child_inum;
-    if (parent_path_inum == 0)
-    {
-        return 0;
-    }
-    else
-    {
-        inode parent_node;
-        read_inode(parent_path_inum, &parent_node);
-        if (parent_node.type != DIRECTORY)
-        {
-            printf("path:%s not a dir\n",parent_path);
-            return 0;
-        }
-        else
-        {
-            inode node;
-            child_inum = allocate_inode();
-            read_inode(child_inum,&node);
-            node.type = DIRECTORY;
-            node.size = 0;
-            write_inode(child_inum, &node);
-            add_entry_to_dir(parent_path_inum, filename, child_inum);
-        }
-    }
+	memcpy(parent_path, path, len);
+	parent_path[len] = 0;
+	char *filename = path + len;
+	printf("path %s filename %s\n", parent_path, filename);
+	uint64_t parent_path_inum = SBFS_namei(parent_path);
+	uint64_t child_inum;
+	if (parent_path_inum == 0)
+	{
+		return 0;
+	}
+	else
+	{
+		inode parent_node;
+		read_inode(parent_path_inum, &parent_node);
+		if (parent_node.type != DIRECTORY)
+		{
+			printf("path:%s not a dir\n", parent_path);
+			return 0;
+		}
+		else
+		{
+			inode node;
+			child_inum = allocate_inode();
+			read_inode(child_inum, &node);
+			node.type = DIRECTORY;
+			node.size = 0;
+			write_inode(child_inum, &node);
+			add_entry_to_dir(parent_path_inum, filename, child_inum);
+		}
+	}
 	return child_inum;
 }
 
 uint64_t SBFS_mknod(char *path)
 {
-    char parent_path[5*MAX_FILENAME];
-    if (SBFS_namei(path) != 0)
-    {
-        return 0;
-    }
-    int len = strlen(path);
-    int i = 0;
-    while (*(path + len - 1) != '/'){
-        len--;
-    }
-    memcpy(parent_path,path,len-1);
-    parent_path[len] = 0;
-    char* filename = path + len;
-    printf("path %s filename %s\n",parent_path,filename);
-    uint64_t parent_path_inum = SBFS_namei(parent_path);
-    uint64_t child_inum;
-    if (parent_path_inum == 0)
-    {
-        return 0;
-    }
-    else
-    {
+	char parent_path[5 * MAX_FILENAME];
+	if (SBFS_namei(path) != 0)
+	{
+		return 0;
+	}
+	int len = strlen(path);
+	int i = 0;
+	while (*(path + len - 1) != '/')
+	{
+		len--;
+	}
+	memcpy(parent_path, path, len);
+	parent_path[len] = 0;
+	char *filename = path + len;
+	printf("path %s filename %s\n", parent_path, filename);
+	uint64_t parent_path_inum = SBFS_namei(parent_path);
+	uint64_t child_inum;
+	if (parent_path_inum == 0)
+	{
+		return 0;
+	}
+	else
+	{
 
-        inode parent_node;
-        read_inode(parent_path_inum, &parent_node);
-        if (parent_node.type != DIRECTORY)
-        {
-            return 0;
-        }
-        else
-        {
-            inode node;
-            child_inum = allocate_inode();
-            read_inode(child_inum,&node);
-            node.type = NORMAL;
-            node.size = 0;
-            write_inode(child_inum, &node);
-            add_entry_to_dir(parent_path_inum, filename, child_inum);
-        }
-    }
+		inode parent_node;
+		read_inode(parent_path_inum, &parent_node);
+		if (parent_node.type != DIRECTORY)
+		{
+			return 0;
+		}
+		else
+		{
+			inode node;
+			child_inum = allocate_inode();
+			read_inode(child_inum, &node);
+			node.type = NORMAL;
+			node.size = 0;
+			write_inode(child_inum, &node);
+			add_entry_to_dir(parent_path_inum, filename, child_inum);
+		}
+	}
 	return child_inum;
 }
 // rmdir - remove empty directories
 
 //TODO: delete from parent dir
-
-
 
 /******
 **  rmdir - remove empty directories
@@ -389,7 +395,7 @@ int SBFS_rmdir(char *path)
 	}
 
 	uint64_t parent_dir_inum = find_parent_dir_inum(path);
-    delete_entry_from_dir(parent_dir_inum, inum);
+	delete_entry_from_dir(parent_dir_inum, inum);
 	free_inode(inum);
 	return 0;
 }
@@ -442,7 +448,8 @@ uint64_t SBFS_open(char *filename, int mode)
 	return inum;
 }
 
-void SBFS_init(){
+void SBFS_init()
+{
 	mkfs();
 	create_root_dir();
 }

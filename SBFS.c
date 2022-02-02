@@ -240,20 +240,6 @@ int find_slash(char *path, int pos)
 	return res;
 }
 
-int find_last_slash(char *path, int len)
-{
-	int prev = -1;
-	int pos = find_slash(path, 0);
-	while (pos != -1)
-	{
-		if (pos < len)
-		{
-			prev = pos;
-			pos = find_slash(path, pos + 1);
-		}
-	}
-	return prev;
-}
 
 uint64_t find_parent_dir_inum(char *path)
 {
@@ -271,6 +257,7 @@ uint64_t find_parent_dir_inum(char *path)
     char* filename = path + len;
     printf("path %s filename %s\n",parent_path,filename);
     uint64_t parent_path_inum = SBFS_namei(parent_path);
+    printf("%ld\n",parent_path_inum);
     return parent_path_inum;
 }
 /* direcotry is dir, the item is empty when inode = 0 */
@@ -420,12 +407,6 @@ int SBFS_unlink(char *path)
 	}
 	printf("unlink %ld\n", inum);
 	read_inode(inum, &node);
-
-	int item_count = node.size / sizeof(dir);
-	assert((node.size % sizeof(dir)) == 0);
-
-	dir entry;
-	int offset = 0;
 	uint64_t parent_path_inum ;
 
 	if (node.type != NORMAL)
@@ -435,7 +416,8 @@ int SBFS_unlink(char *path)
 	}
 	else
 	{
-		uint64_t parent_dir_inum = find_parent_dir_inum(path);
+		parent_path_inum = find_parent_dir_inum(path);
+        printf("unlink parent inum %ld\n",parent_path_inum);
 		delete_entry_from_dir(parent_path_inum, inum);
 		free_inode(inum);
 	}

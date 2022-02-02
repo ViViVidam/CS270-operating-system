@@ -14,8 +14,8 @@ typedef struct
 
 uint64_t SBFS_open(char *filename, int mode);
 int SBFS_close(int inum);
-uint64_t SBFS_mkdir(char *path, inode *node);
-uint64_t SBFS_mknod(char *path, inode *node);
+uint64_t SBFS_mkdir(char *path);
+uint64_t SBFS_mknod(char *path);
 
 uint64_t add_entry_to_dir(uint64_t inum,char* filename,uint64_t file_inode);
 

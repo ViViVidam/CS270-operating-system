@@ -12,16 +12,34 @@
 
 #define DIR_LENG (BLOCKSIZE / sizeof(dir))
 uint64_t block_id_helper(inode *node, int index, int mode);
-void SBFS_readdir_raw(inode *node, int entry_index, dir *entry);
+void SBFS_readdir_raw(uint64_t inum, int entry_index, dir *entry);
 void create_root_dir();
 
-void SBFS_readdir_raw(inode *node, int entry_index, dir *entry)
+char* SBFS_clean_path(char *path){
+    int state = 0;
+    char tmp[4096];
+    int i = 0;
+    while( *path != 0){
+        if(state == 0) {
+            if (*path == '/') {
+                state = 1;
+
+            }
+            tmp[i++] = *path;
+        }
+        else {
+            if(*path!='/') {
+                tmp[i++] = *path;
+                state = 0;
+            }
+        }
+        path += 1;
+    }
+    tmp[i] = 0;
+}
+void SBFS_readdir_raw(uint64_t inum, int entry_index, dir *entry)
 {
-	int index = entry_index * sizeof(dir) / BLOCKSIZE;
-	int offset = entry_index * sizeof(dir) % BLOCKSIZE;
-	int block_id = block_id_helper(node, entry_index, H_READ);
-	SBFS_read(block_id, offset, sizeof(dir), entry);
-	//return &entry;
+    SBFS_read(inum, entry_index * sizeof (dir), sizeof(dir), entry);
 }
 
 uint64_t add_entry_to_dir(uint64_t dir_inum, char *filename, uint64_t file_inum)
@@ -34,7 +52,7 @@ uint64_t add_entry_to_dir(uint64_t dir_inum, char *filename, uint64_t file_inum)
 	int i = 0;
 	for (i = 0; i < entries; i++)
 	{
-		SBFS_readdir_raw(&node, i, &entry);
+		SBFS_readdir_raw(dir_inum, i, &entry);
 		if (entry.inum == 0)
 		{
 			strcpy(entry.filename, filename);
@@ -46,7 +64,6 @@ uint64_t add_entry_to_dir(uint64_t dir_inum, char *filename, uint64_t file_inum)
 	strcpy(entry.filename, filename);
 	entry.inum = file_inum;
 	SBFS_write(dir_inum, i * sizeof(entry), sizeof(entry), &entry);
-	SBFS_read(dir_inum, i * sizeof(entry), sizeof(entry), &entry);
 	return i;
 }
 
@@ -60,8 +77,7 @@ uint64_t find_file_entry(uint64_t inum, char *filename)
 	assert((node.size % sizeof(dir)) == 0);
 	for (int i = 0; i < entry_count; i++)
 	{
-		SBFS_readdir_raw(&node, i, &entry);
-		printf("entry name %s %ld\n", entry.filename, entry.inum);
+		SBFS_readdir_raw(inum, i, &entry);
 		if (strcmp(filename, entry.filename) == 0)
 			return entry.inum;
 	}
@@ -80,7 +96,6 @@ uint64_t SBFS_namei(char *path)
 	{
 		return ROOT;
 	}
-	//TODO: WHY +1
 	pointer += 1;
 	inum = ROOT;
 
@@ -92,11 +107,10 @@ uint64_t SBFS_namei(char *path)
 			pointer += 1;
 		}
 		filename[i] = 0;
-		printf("fiename in namei %s\n", filename);
 		inum = find_file_entry(inum, filename);
 		if (inum == 0)
 		{
-			printf("namei, failed to find path: %s %s", path, filename);
+			printf("namei, failed to find path: %s %s\n", path, filename);
 			return 0; //cannot find inode
 		}
 		//changed!!
@@ -116,7 +130,6 @@ uint64_t SBFS_namei(char *path)
 		if (*pointer == 0)
 			return inum;
 	}
-	//TODO: WHY?
 	return 1; // the path end with /
 }
 
@@ -126,8 +139,9 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	char *buffer = (char *)buf;
 	inode node;
 	read_inode(inum, &node);
+    int64_t pre_size = size;
 
-	int start = offset / BLOCKSIZE;
+    int start = block_id_helper(&node,offset / BLOCKSIZE,H_READ);
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
 
@@ -144,23 +158,19 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 		buffer += read_bytes;
 		size -= read_bytes;
 	}
-	return 0;
+	return pre_size;
 }
-/* mode H_READ, don't create new block,mode H_CREATE create new block */
+/* mode H_READ, don't create new block,mode H_CREATE create new block
+ * the corresponding inode where and what size
+ * */
 
-int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
-{
+int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf){
 	inode node;
 	read_inode(inum, &node);
 
-	if (node.type == DIRECTORY)
-	{
-		return 0;
-	}
-
 	char *buffer = (char *)buf;
 	uint64_t upperbound = size + offset;
-	int start = offset / BLOCKSIZE;
+	int start = block_id_helper(&node,offset / BLOCKSIZE,H_CREATE);
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
 
@@ -183,170 +193,98 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	return 0;
 }
 
-int find_slash(char *path, int pos)
-{
-	char *pointer = path + pos;
-	int res = pos;
-	while (*pointer != 0 && *pointer != '/')
-	{
-		++res;
-		pointer++;
-	}
-	if (*pointer == 0)
-	{
-		return -1;
-	}
-	return res;
-}
-
-int find_last_slash(char *path, int len)
-{
-	int prev = -1;
-	int pos = find_slash(path, 0);
-	while (pos != -1)
-	{
-		if (pos < len)
-		{
-			prev = pos;
-			pos = find_slash(path, pos + 1);
-		}
-	}
-	return prev;
-}
-
-int get_len(char *path)
-{
-	int len = 0;
-	char *pointer = path;
-	while (*pointer != 0)
-	{
-		len++;
-		pointer++;
-	}
-	return len;
-}
-
 /* direcotry is dir, the item is empty when inode = 0 */
-<<<<<<< HEAD
-uint64_t SBFS_mkdir(char *filename, inode *node){
-=======
 /*
 return 0: can not mkdir
 */
-uint64_t SBFS_mkdir(char *path, inode *node)
+uint64_t SBFS_mkdir(char *path)
 {
-	int len = get_len(path);
-	while (*(path + len - 1) == '/')
-	{
-		*(path + len - 1) = 0;
-		--len;
+    char parent_path[5*MAX_FILENAME];
+    if (SBFS_namei(path) != 0)
+    {
+        return 0;
+    }
+	int len = strlen(path);
+    int i = 0;
+	while (*(path + len - 1) != '/'){
+		len--;
 	}
-	//can not make new dir cause it exist
-	if (SBFS_namei(path) != 0)
-	{
-		return 0;
-	}
-	//prev is the position of the last slash
-	int prev = find_last_slash(path, len);
-
-	char *path_before_slash;
-	char dirname[MAX_FILENAME];
-	uint64_t parent_path_inum = ROOT;
-
-	if (prev != -1)
-	{
-		memset(path_before_slash, 0, len);
-		memcpy(path_before_slash, path, prev);
-		parent_path_inum = SBFS_namei(path_before_slash);
-		if (parent_path_inum == 0)
-		{
-			return 0;
-		}
-		else
-		{
-			inode parent_node;
-			read_inode(parent_path_inum, &parent_node);
-			if (parent_node.type != DIRECTORY)
-			{
-				return 0;
-			}
-		}
-		memcpy(dirname, path + prev + 1, len - prev - 1);
-	}
-	else
-	{
-		memcpy(dirname, path, len);
-	}
-
->>>>>>> 6676e35178af4348e952b91673dc7c66d419a3d1
-	/* writing into new dir */
-	uint64_t inum = allocate_inode();
-	memset(node, 0, sizeof(inode));
-	node->type = DIRECTORY;
-	node->size = 0;
-	node->flag = 1;
-	write_inode(inum, node);
-
-	//TODO: write into parent dir
-	add_entry_to_dir(parent_path_inum, dirname, inum);
-
-	return inum;
+    memcpy(parent_path,path,len-1);
+    parent_path[len] = 0;
+    char* filename = path + len;
+    printf("path %s filename %s\n",parent_path,filename);
+    uint64_t parent_path_inum = SBFS_namei(parent_path);
+    uint64_t child_inum;
+    if (parent_path_inum == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        inode parent_node;
+        read_inode(parent_path_inum, &parent_node);
+        if (parent_node.type != DIRECTORY)
+        {
+            printf("path:%s not a dir\n",parent_path);
+            return 0;
+        }
+        else
+        {
+            inode node;
+            child_inum = allocate_inode();
+            read_inode(child_inum,&node);
+            node.type = DIRECTORY;
+            node.size = 0;
+            write_inode(child_inum, &node);
+            add_entry_to_dir(parent_path_inum, filename, child_inum);
+        }
+    }
+	return child_inum;
 }
 
-uint64_t SBFS_mknod(char *path, inode *node)
+uint64_t SBFS_mknod(char *path)
 {
-	int len = get_len(path);
-	if (*(path + len - 1) == '/')
-	{
-		return 0;
-	}
-	if (SBFS_namei(path) != 0)
-	{
-		return 0;
-	}
-	//prev is the position of the last slash
-	int prev = find_last_slash(path, len);
+    char parent_path[5*MAX_FILENAME];
+    if (SBFS_namei(path) != 0)
+    {
+        return 0;
+    }
+    int len = strlen(path);
+    int i = 0;
+    while (*(path + len - 1) != '/'){
+        len--;
+    }
+    memcpy(parent_path,path,len-1);
+    parent_path[len] = 0;
+    char* filename = path + len;
+    printf("path %s filename %s\n",parent_path,filename);
+    uint64_t parent_path_inum = SBFS_namei(parent_path);
+    uint64_t child_inum;
+    if (parent_path_inum == 0)
+    {
+        return 0;
+    }
+    else
+    {
 
-	char *path_before_slash;
-	char filename[MAX_FILENAME];
-	uint64_t parent_path_inum = ROOT;
-
-	if (prev != -1)
-	{
-		memset(path_before_slash, 0, len);
-		memcpy(path_before_slash, path, prev);
-		parent_path_inum = SBFS_namei(path_before_slash);
-		if (parent_path_inum == 0)
-		{
-			return 0;
-		}
-		else
-		{
-			inode parent_node;
-			read_inode(parent_path_inum, &parent_node);
-			if (parent_node.type != DIRECTORY)
-			{
-				return 0;
-			}
-		}
-		memcpy(filename, path + prev + 1, len - prev - 1);
-	}
-	else
-	{
-		memcpy(filename, path, len);
-	}
-
-	uint64_t inum = allocate_inode();
-	read_inode(inum, node);
-	printf("SBFS_mknod read %ld\n", node->flag);
-	node->type = NORMAL;
-	node->size = 0;
-	write_inode(inum, node);
-
-	//TODO: write into parent dir
-	add_entry_to_dir(parent_path_inum, filename, inum);
-
-	return inum;
+        inode parent_node;
+        read_inode(parent_path_inum, &parent_node);
+        if (parent_node.type != DIRECTORY)
+        {
+            return 0;
+        }
+        else
+        {
+            inode node;
+            child_inum = allocate_inode();
+            read_inode(child_inum,&node);
+            node.type = NORMAL;
+            node.size = 0;
+            write_inode(child_inum, &node);
+            add_entry_to_dir(parent_path_inum, filename, child_inum);
+        }
+    }
+	return child_inum;
 }
 
 
@@ -378,11 +316,7 @@ int SBFS_unlink(char *path)
 	{
 		for (int i = 0; i < item_count; i++)
 		{
-			int index = i * sizeof(dir) / BLOCKSIZE;
-			int offset = i * sizeof(dir) % BLOCKSIZE;
-			int block_id = block_id_helper(index, &node, H_READ);
-			assert(block_id != 0);
-			SBFS_read(block_id, offset, sizeof(dir), &entry);
+			SBFS_read(inum, i * sizeof(dir), sizeof(dir), &entry);
 			assert(entry.inum != 0);
 			free_inode(entry.inum);
 		}
@@ -430,7 +364,7 @@ dir *SBFS_readdir(uint64_t inum)
 	{
 		if (i >= item_count)
 			return NULL;
-		SBFS_readdir_raw(&node, i, &entry);
+		SBFS_readdir_raw(inum, i, &entry);
 		i += 1;
 		if (entry.inum != 0)
 		{
@@ -576,19 +510,24 @@ void create_root_dir()
 int main()
 {
 	dir *entry;
-	inode node;
 	SBFS_init();
-	uint64_t inum = SBFS_mknod("testtest1", &node);
-	add_entry_to_dir(ROOT, "testtest1", inum);
-	inum = SBFS_mkdir("testtest2", &node);
-	add_entry_to_dir(ROOT, "testtest2", inum);
-	inum = SBFS_mknod("testtest3", &node);
-	add_entry_to_dir(ROOT, "testtest3", inum);
-	SBFS_unlink("/testtest2");
+	uint64_t inum = SBFS_mkdir("/testtest1");
+    inum = SBFS_mkdir("/testtest2");
+    inum = SBFS_mkdir("/testtest1/abc");
+	//add_entry_to_dir(ROOT, "testtest1", inum);
+	//inum = SBFS_mkdir("/testtest2", &node);
+	//add_entry_to_dir(ROOT, "testtest2", inum);
+	//inum = SBFS_mknod("/testtest3", &node);
+	//add_entry_to_dir(ROOT, "testtest3", inum);
+	//SBFS_unlink("/testtest2");
 	while (entry = SBFS_readdir(ROOT))
 	{
-		printf("%s %ld\n", entry->filename, entry->inum);
+		printf("readdir %s %ld\n", entry->filename, entry->inum);
 	}
+    while (entry = SBFS_readdir(2))
+    {
+        printf("readdir %s %ld\n", entry->filename, entry->inum);
+    }
 	printf("%ld\n", allocate_inode());
 	return 0;
 }

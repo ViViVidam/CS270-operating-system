@@ -5,7 +5,12 @@ all: disk node SBFS
 	make clean
 	./main
 	rm main
-	
+
+fuse: disk node SBFS
+	$(CC) -Wall -c sbFuse.c -o sbFuse.o
+	$(CC) -Wall sbFuse.o disk.o nodes.o SBFS.o `pkg-config fuse3 --cflags --libs` -o main
+	./main -f mount
+
 disk:
 	$(CC) -Wall -c disk.c -o disk.o
 
@@ -15,9 +20,7 @@ node:
 SBFS:
 	$(CC) -Wall -c SBFS.c -o SBFS.o
 
-fuse:
-	$(CC) -Wall main.c `pkg-config fuse3 --cflags --libs` -o main
-	./main -f mount
+
 #makefuse:
 #	$(CC) -Wall main.c `pkg-config fuse3 --cflags --libs` -o main
 #	./main -f mount

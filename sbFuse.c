@@ -79,12 +79,17 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	}
 	else
 	{
+		printf("add . to filler\n");
 		filler(buf, ".", NULL, 0, 0);
+
+		printf("add . to filler\n");
 		filler(buf, "..", NULL, 0, 0);
 		// read file in path 1 by 1
 		while (1)
 		{
 			dir *dr = SBFS_readdir(inum);
+
+			printf("add %s to filler\n", dr->filename);
 			if (dr)
 			{
 				filler(buf, dr->filename, NULL, 0, 0);
@@ -112,18 +117,18 @@ static int sb_opendir(const char *path, struct fuse_file_info *fi)
 	}
 	printf("set fi->fh = inum: %ld\n", inum);
 	fi->fh = inum;
-	inode node;
-	read_inode(inum, &node);
+	// inode node;
+	// read_inode(inum, &node);
 
-	if (node.type != DIRECTORY)
-	{
-		printf("open dir failed.\n");
-		return -1;
-	}
-	else
-	{
-		return 0;
-	}
+	// if (node.type != DIRECTORY)
+	// {
+	// 	printf("open dir failed.\n");
+	// 	return -1;
+	// }
+	// else
+	// {
+	return 0;
+	// }
 }
 
 static int sb_releasedir(const char *path, struct fuse_file_info *fi)

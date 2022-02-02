@@ -399,12 +399,8 @@ int SBFS_rmdir(char *path)
 	}
 
 	uint64_t parent_dir_inum = find_parent_dir_inum(path);
-<<<<<<< HEAD
     printf("rmdir %ld: inum %ld\n", parent_dir_inum, inum);
     delete_entry_from_dir(parent_dir_inum, inum);
-=======
-	delete_entry_from_dir(parent_dir_inum, inum);
->>>>>>> c8a3aa56e9d6cc0230c1b02583969649b18f386d
 	free_inode(inum);
 	return 0;
 }

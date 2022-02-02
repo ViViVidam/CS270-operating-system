@@ -34,11 +34,11 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 	stbuf->st_mtime = time(NULL);
 
 	uint64_t inum = SBFS_namei(path);
-    if(inum == 0)
-        return -ENOENT;
-    else
-        printf("inum %ld\n",inum);
-	fi->fh = inum;
+	if (inum == 0)
+		return -ENOENT;
+	else
+		printf("inum %ld\n", inum);
+	//fi->fh = inum;
 	inode node;
 	read_inode(inum, &node);
 	printf("read node inum %ld\n", inum);
@@ -57,8 +57,6 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 
 	return 0;
 }
-
-
 
 static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 					  off_t offset, struct fuse_file_info *fi,
@@ -112,6 +110,7 @@ static int sb_opendir(const char *path, struct fuse_file_info *fi)
 		printf("open dir failed.");
 		return -1;
 	}
+	printf("set fi->fh = inum: %ld", inum);
 	fi->fh = inum;
 	inode node;
 	read_inode(inum, &node);
@@ -168,6 +167,7 @@ static int sb_open(const char *path, struct fuse_file_info *fi)
 		printf("open failed");
 		return -1;
 	}
+	printf("set fi->fh = inum: %ld\n", inum);
 	fi->fh = inum;
 	return inum;
 }
@@ -227,8 +227,6 @@ static const struct fuse_operations sb_oper = {
 	.rmdir = sb_rmdir,
 
 };
-
-
 
 int main(int argc, char *argv[])
 {

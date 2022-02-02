@@ -74,7 +74,7 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	if (node.type != DIRECTORY)
 	{
-		printf("read dir failed.");
+		printf("read dir failed.\n");
 		return -1;
 	}
 	else
@@ -107,17 +107,17 @@ static int sb_opendir(const char *path, struct fuse_file_info *fi)
 	//wrong inum
 	if (inum == 0)
 	{
-		printf("open dir failed.");
+		printf("open dir failed.\n");
 		return -1;
 	}
-	printf("set fi->fh = inum: %ld", inum);
+	printf("set fi->fh = inum: %ld\n", inum);
 	fi->fh = inum;
 	inode node;
 	read_inode(inum, &node);
 
 	if (node.type != DIRECTORY)
 	{
-		printf("open dir failed.");
+		printf("open dir failed.\n");
 		return -1;
 	}
 	else
@@ -139,8 +139,10 @@ static int sb_mknod(const char *path, mode_t mode, dev_t dev)
 	int ret = SBFS_mknod(path);
 	if (ret == 0)
 	{
-		printf("mknod failed");
+		printf("mknod failed\n");
 		return -1;
+	} else {
+		printf("mknod successed\n");
 	}
 	return ret;
 }
@@ -151,8 +153,10 @@ static int sb_mkdir(const char *path, mode_t mode)
 	int ret = SBFS_mkdir(path);
 	if (ret == 0)
 	{
-		printf("mkdir failed");
+		printf("mkdir failed\n");
 		return -1;
+	} else {
+		printf("mkdir successed\n");
 	}
 	return ret;
 }
@@ -164,7 +168,7 @@ static int sb_open(const char *path, struct fuse_file_info *fi)
 	uint64_t inum = SBFS_open(path, 1);
 	if (inum == 0)
 	{
-		printf("open failed");
+		printf("open failed\n");
 		return -1;
 	}
 	printf("set fi->fh = inum: %ld\n", inum);

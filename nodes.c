@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <string.h>
-#include "nodes.h"
 #include <math.h>
 #include <assert.h>
+
+#include "nodes.h"
 
 #define INODE_PER_BLOCK (BLOCKSIZE / sizeof(inode))
 

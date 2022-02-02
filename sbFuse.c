@@ -86,12 +86,13 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		filler(buf, "..", NULL, 0, 0);
 		// read file in path 1 by 1
 		while (1)
-		{
-			dir *dr = SBFS_readdir(inum);
+		{	
+			printf("call readdir on inum %ld\n", inum);
+			dir *dr = SBFS_readdir(inum,0);
+			printf("get dir pointer: 0x%08x\n", dr);
 			if (dr)
 			{
-                printf("dr %s %ld\n",dr->filename,dr->inum);
-				printf("add %s to filler\n", dr->filename);
+				printf("add filename: %s to filler\n", dr->filename);
 				filler(buf, dr->filename, NULL, 0, 0);
 			}
 			else
@@ -101,7 +102,7 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			}
 		}
 	}
-
+    SBFS_readdir(0,1);
 	return 0;
 }
 

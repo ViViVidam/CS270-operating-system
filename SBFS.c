@@ -467,29 +467,35 @@ dir *SBFS_readdir(uint64_t inum,int init)
 	static int item_count;
 	static inode node;
 	static dir entry;
-	if (inum != present_inum || init == 1)
-	{
-		i = 0;
-		present_inum = inum;
-		read_inode(inum, &node);
-		assert(node.type == DIRECTORY);
-        item_count = node.size / sizeof(dir);
-	}
-    printf("SBFS_readdir inum %ld itemcount %ld %ld\n",inum,node.size,item_count);
-	assert((node.size % sizeof(dir)) == 0);
-	while (1)
-	{
-		if (i >= item_count)
-			return NULL;
-		SBFS_readdir_raw(inum, i, &entry);
-        printf("diur %ld %s %ld\n",inum,entry.filename,entry.inum);
-		i += 1;
-		if (entry.inum != 0)
-		{
-			return &entry;
-		}
-	}
-	return NULL;
+    if(init != 1) {
+        if (inum != present_inum) {
+            i = 0;
+            present_inum = inum;
+            read_inode(inum, &node);
+            assert(node.type == DIRECTORY);
+            item_count = node.size / sizeof(dir);
+        }
+        printf("SBFS_readdir inum %ld itemcount %ld %ld\n", inum, node.size, item_count);
+        assert((node.size % sizeof(dir)) == 0);
+        while (1) {
+            if (i >= item_count)
+                return NULL;
+            SBFS_readdir_raw(inum, i, &entry);
+            printf("diur %ld %s %ld\n", inum, entry.filename, entry.inum);
+            i += 1;
+            if (entry.inum != 0) {
+                return &entry;
+            }
+        }
+        return NULL;
+    }
+    else{
+        i = 0;
+        present_inum = -1;
+        item_count = 0;
+        memset(&node,0,sizeof(node));
+        memset(&entry,0,sizeof(entry));
+    }
 }
 
 uint64_t block_id_helper(inode *node, int index, int mode)

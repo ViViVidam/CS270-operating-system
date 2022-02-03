@@ -24,14 +24,13 @@ cd CS270-operating-system-main
 make fuse
 ```
 
-    The output should look like:
-    
+   The output should look like:
+
 ```
 sb_init
 data block starts from block 101
 ```
-
-    which means that SBFS has started successfully, default mount point is `./mount/`
+   which means that SBFS has started successfully, default mount point is `./mount/`
    2. test in a new terminal
 ```
 cd CS270-operating-system-main

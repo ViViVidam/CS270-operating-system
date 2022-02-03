@@ -1,5 +1,9 @@
 # CS270-operating-system
 
+## About
+
+SBFS(UCSB File System) is a user 
+
 ## Getting Started
 
 1. Requirement: Fuse3 is required.

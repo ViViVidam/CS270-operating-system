@@ -31,11 +31,14 @@ sb_init
 data block starts from block 101
 ```
    which means that SBFS has started successfully, default mount point is `./mount/`
+   
    2. test in a new terminal
+   
 ```
 cd CS270-operating-system-main
 cd mount
 ```
+
       1. bash test
       2. C program test
 

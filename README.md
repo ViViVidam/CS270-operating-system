@@ -21,8 +21,6 @@ group work from team SBFS
 
 3. Setup the file system
    there are two modes to run the file system, normal and debug
-   
-### normal case
 
    start the file system with
    ```
@@ -30,16 +28,6 @@ group work from team SBFS
    make run
    ``` 
    this will create a mount point at `./mount/`, also copy a helloworld file into the file system
-      
-### debug case
-
-   the debug mode, where you can see the output from the file system:
-   ```
-   cd CS270-operating-system-main
-   make debug
-   ```
-   you can see the output from the file system in this case
-
 
 ## test
 

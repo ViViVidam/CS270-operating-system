@@ -22,7 +22,7 @@ group work from team SBFS
 3. Setup the file system
    there are two modes to run the file system, normal and debug
    
-###normal case
+### normal case
 
    start the file system with
    ```
@@ -31,7 +31,7 @@ group work from team SBFS
    ``` 
    this will create a mount point at `./mount/`, also copy a helloworld file into the file system
       
-###debug case
+### debug case
 
    the debug mode, where you can see the output from the file system:
    ```
@@ -41,7 +41,7 @@ group work from team SBFS
    you can see the output from the file system in this case
 
 
-##test
+## test
 
    for normal case: `cd` to the mount point and enjoy  
    for debug case you have to start a new terminal then `cd` to the mount point  

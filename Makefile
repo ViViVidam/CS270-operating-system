@@ -2,21 +2,18 @@ CC = gcc
 
 all: disk node SBFS
 	$(CC) -Wall disk.o nodes.o SBFS.o -o main -lm
-	make clean
+	rm *.o
 	./main
 	rm main
 
 run:  disk.c nodes.c SBFS.c sbFuse.c
 	$(CC) -Wall disk.c nodes.c SBFS.c sbFuse.c -lm `pkg-config fuse3 --cflags --libs` -o main
 	./main mount
-	echo "int main(printf(\"hello world\\n\");){};" > mount/hello
-	fusermount -u mount
+	echo "hello world!" > mount/hello
 
-fuse: disk.c nodes.c SBFS.c sbFuse.c
+debug: disk.c nodes.c SBFS.c sbFuse.c
 	$(CC) -Wall disk.c nodes.c SBFS.c sbFuse.c -lm `pkg-config fuse3 --cflags --libs` -o main
 	./main -f mount
-	echo "int main(printf(\"hello world\\n\");){};" > mount/hello
-	fusermount -u mount
 
 disk:
 	$(CC) -Wall -c disk.c -o disk.o
@@ -33,4 +30,5 @@ SBFS:
 #	rm main
 
 clean:
-	rm *.o
+	fusermount -u mount
+	rm main

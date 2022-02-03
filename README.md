@@ -1,10 +1,8 @@
 # CS270-operating-system
 
-## About
+group work from team SBFS  
 
-SBFS(UCSB File System) is a user 
-
-## Getting Started
+## Starting the file system
 
 1. Requirement: Fuse3 is required.
 
@@ -21,35 +19,64 @@ SBFS(UCSB File System) is a user
    tar zxvf CS270-operating-system-main.tar.gz
    ```
 
-3. Setup the file system and run the test
-
-   1. start the SBFS:
-
-      ```
-      cd CS270-operating-system-main
-      make fuse
-      ```
-
-       The output should look like:		
-
-      ```
-      sb_init
-      data block starts from block 101
-      ```
-
-       which means that SBFS has started successfully, default mount point is `./mount/`
-
-   2. test in a new terminal
-
-      ```
-      cd CS270-operating-system-main
-      cd mount
-      ```
-
-         1. bash test
-         2. C program test
+3. Setup the file system
+   there are two modes to run the file system, normal and debug
+   
+   ###normal case
+   start the file system with
+   ```
+   cd CS270-operating-system-main
+   make run
+   ``` 
+   this will create a mount point at `./mount/`, also copy a helloworld file into the file system
+      
+   ###debug case
+   the debug mode, where you can see the output from the file system:
+   ```
+   cd CS270-operating-system-main
+   make debug
+   ```
+   you can see the output from the file system in this case
 
 
+ ##test
+   for normal case: `cd` to the mount point and enjoy  
+   for debug case you have to start a new terminal then `cd` to the mount point  
+   
+   the functions has been implemented are:
+   `read` `write``mkdir``rmdir``unlink``close``namei``readdir``mknod`  
+   
+you can also find it in `SBFS.h`
+
+   we have tested several linux command:
+
+| command line  |        purpose        |
+|:-------------:|:---------------------:|
+|      ls       |  read directory file  |
+| echo with `>` |    test write file    |
+|     touch     |      create file      |
+|      cat      |       read file       |
+|     mkdir     | write directory file  |
+|     touch     |     create a file     |
+|      cd       |     for integrity     |
+|      rm       | test unlink and rmdir |
+| test program  | a further validation  |
+
+feel free to play with these command lines after cd into the mount point   
+   ```
+   cd ./mount
+   ```
+
+To run the test program type `./test string offset` in the root directory  
+`string` is what you want to write into the file and `offset` is the input of the `lseek`  
+also you will be able to test a file name `a` after cd into the mount point  
+
+we guarantee no robustness, so file system may fail if you are trying to lseek the entire file size or deleting file that doesn't exist
+
+## End testing
+   ```
+   make clean
+   ```
 
 ## Reference
 

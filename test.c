@@ -1,8 +1,17 @@
 #include <stdio.h>
-
-int main(){
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc,char* argv[]){
+    if(argc!=3)
+        printf("wrong format, usage:\n./test string offset\n");
     char buf[4096];
-    FILE * fp= fopen("mount/hello","r");
-    while(fscanf(fp,"%s",buf)!=EOF)
-        printf("%s\n",buf);
+    char filename[40]= "./mount/a";
+    int f_write= open(filename,O_WRONLY);
+    write(f_write,argv[1],strlen(argv[1]));
+    int f_read = open(filename, O_RDONLY);
+    lseek(f_read,atoi(argv[2]),SEEK_CUR);
+    read(f_read,buf,strlen(argv[1]));
+    printf("%s\n",buf);
 }

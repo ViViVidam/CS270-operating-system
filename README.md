@@ -61,12 +61,12 @@ group work from team SBFS
 |      rm       | test unlink and rmdir |
 | test program  | a further validation  |
 
-You can play with these commands in a new terminal  and check the log in the original terminal.
+You can play with these commands in a new terminal and check the log in the original terminal.
 
-- Also, we provide a test C program (`test.c`) including some basic file operatinos, with which you can created a new file named `a`  and write some charecters into it: 
+- Also, we provide a test C program (`test.c`) including some basic file operations, with which you can create a new file named `a`  and write some characters into it: 
   - To run the test program, type `./test string offset` in the root directory (first `cd ..` if you are within the mount point)
   - `string` is what you want to write into the file and `offset` is the input of the `lseek`  
-  - you will find the new file named `a` after `cd` into the mount point, use `cat` to check what you have write 
+  - you will find the new file named `a` after `cd` into the mount point, use `cat` to check what you have written 
 
 - We guarantee no robustness, so the file system may fail if you are trying to lseek the entire file size or deleting file that doesn't exist.
 
@@ -79,3 +79,5 @@ make clean
 ## Reference
 
 1. [Writing a FUSE Filesystem: a Tutorial](https://www.cs.nmsu.edu/~pfeiffer/fuse-tutorial/)
+
+

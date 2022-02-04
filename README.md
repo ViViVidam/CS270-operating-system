@@ -63,7 +63,7 @@ group work from team SBFS
 
 You can play with these commands in a new terminal  and check the log in the original terminal.
 
-- Also, we provide a test C program including some basic file operatinos, with which you can created a new file named `a`  and write some charecters into it: 
+- Also, we provide a test C program (`test.c`) including some basic file operatinos, with which you can created a new file named `a`  and write some charecters into it: 
   - To run the test program, type `./test string offset` in the root directory (first `cd ..` if you are within the mount point)
   - `string` is what you want to write into the file and `offset` is the input of the `lseek`  
   - also you find the new file named `a` after `cd` into the mount point  
@@ -78,4 +78,4 @@ make clean
 
 ## Reference
 
-1. [Writing a FUSE Filesystem: a Tutorial](
+1. [Writing a FUSE Filesystem: a Tutorial](https://www.cs.nmsu.edu/~pfeiffer/fuse-tutorial/)

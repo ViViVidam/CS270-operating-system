@@ -4,7 +4,7 @@ group work from team SBFS
 
 ## Starting the file system
 
-1. Requirement: Fuse3 is required.
+1. Requirement: **Fuse3** is required.
 
 2. Download the repo:
 
@@ -23,26 +23,33 @@ group work from team SBFS
    there are two modes to run the file system, normal and debug
 
    start the file system with
+
    ```
    cd CS270-operating-system-main
    make run
-   ``` 
-   this will create a mount point at `./mount/`, also copy a helloworld file into the file system
+   ```
 
-## test
+   The mount point will be created at `./mount/`, also a helloworld file will be copied into the file system.
 
-   for normal case: `cd` to the mount point and enjoy  
-   for debug case you have to start a new terminal then `cd` to the mount point  
-   
-   the functions has been implemented are:
-   `read` `write``mkdir``rmdir``unlink``close``namei``readdir``mknod`  
-   
-you can also find it in `SBFS.h`
+## Test
 
-   we have tested several linux command:
+- for normal case: `cd` to the mount point
 
-| command line  |        purpose        |
-|:-------------:|:---------------------:|
+- for debug case: start a new terminal and  `cd` to the mount point  
+
+  ```
+  cd ./mount
+  ```
+
+- system call functions our current implementation suppots:
+
+  -  `read` `write` `mkdir` `rmdir` `unlink` `close` `namei` `readdir` `mknod`  
+  - you can also find them in `SBFS.h`
+
+- we have tested the linux commands below:
+
+|    command    |        purpose        |
+| :-----------: | :-------------------: |
 |      ls       |  read directory file  |
 | echo with `>` |    test write file    |
 |     touch     |      create file      |
@@ -53,23 +60,21 @@ you can also find it in `SBFS.h`
 |      rm       | test unlink and rmdir |
 | test program  | a further validation  |
 
-feel free to play with these command lines after cd into the mount point   
-   ```
-   cd ./mount
-   ```
+You can play with these commands in a new terminal  and check the log in the original terminal.
 
-To run the test program type `./test string offset` in the root directory  
-`string` is what you want to write into the file and `offset` is the input of the `lseek`  
-also you will be able to test a file name `a` after cd into the mount point  
+- Also, we provide a test C program including some basic file operatinos, with which you can created a new file named `a`  and write some charecters into it: 
+  - To run the test program, type `./test string offset` in the root directory (first `cd ..` if you are within the mount point)
+  - `string` is what you want to write into the file and `offset` is the input of the `lseek`  
+  - also you find the new file named `a` after `cd` into the mount point  
 
-we guarantee no robustness, so file system may fail if you are trying to lseek the entire file size or deleting file that doesn't exist
+- We guarantee no robustness, so the file system may fail if you are trying to lseek the entire file size or deleting file that doesn't exist.
 
 ## End testing
-   ```
-   make clean
-   ```
+
+```
+make clean
+```
 
 ## Reference
 
-1. [Writing a FUSE Filesystem: a Tutorial](https://www.cs.nmsu.edu/~pfeiffer/fuse-tutorial/)
-
+1. [Writing a FUSE Filesystem: a Tutorial](

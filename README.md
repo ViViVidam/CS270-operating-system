@@ -30,7 +30,7 @@ group work from team SBFS
    make run
    ```
 
-   The mount point will be created at `./mount/`. And a test file will be copied into the file system.
+   The mount point will be created at `./mount/`. And a `hello` file will be automatically created in the file system.
 
 ## Test
 

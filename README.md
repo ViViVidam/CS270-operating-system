@@ -20,6 +20,7 @@ group work from team SBFS
    ```
 
 3. Setup the file system
+4. 
    there are two modes to run the file system, normal and debug
 
    start the file system with
@@ -29,7 +30,7 @@ group work from team SBFS
    make run
    ```
 
-   The mount point will be created at `./mount/`, also a helloworld file will be copied into the file system.
+   The mount point will be created at `./mount/`. And a test file will be copied into the file system.
 
 ## Test
 

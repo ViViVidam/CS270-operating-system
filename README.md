@@ -66,7 +66,7 @@ You can play with these commands in a new terminal  and check the log in the ori
 - Also, we provide a test C program (`test.c`) including some basic file operatinos, with which you can created a new file named `a`  and write some charecters into it: 
   - To run the test program, type `./test string offset` in the root directory (first `cd ..` if you are within the mount point)
   - `string` is what you want to write into the file and `offset` is the input of the `lseek`  
-  - also you find the new file named `a` after `cd` into the mount point  
+  - you will find the new file named `a` after `cd` into the mount point, use `cat` to check what you have write 
 
 - We guarantee no robustness, so the file system may fail if you are trying to lseek the entire file size or deleting file that doesn't exist.
 

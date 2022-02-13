@@ -18,7 +18,7 @@ group work from team SBFS
    wget https://github.com/ViViVidam/CS270-operating-system/archive/main.tar.gz
    tar zxvf CS270-operating-system-main.tar.gz
    ```
-3. Environment prepare
+3. Environment prepare  
    To run this on Centos 7  
    please run
    ```

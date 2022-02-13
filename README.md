@@ -38,6 +38,8 @@ group work from team SBFS
    
    so make sure you `scl enable devtoolset-9 bash` and make the project both as root or user  
    
+   you can type `gcc --version` to check if it work fine  
+   
 4. Setup the file system
 
    start the file system with

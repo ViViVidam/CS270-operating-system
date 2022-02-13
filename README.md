@@ -19,8 +19,11 @@ group work from team SBFS
    tar zxvf CS270-operating-system-main.tar.gz
    ```
 3. Environment prepare  
+
    To run this on Centos 7  
+   
    please run
+   
    ```
    (sudo) yum -y install gcc make git fuse3 fuse3-devel man-pages gdb
    (sudo) yum update -y
@@ -28,8 +31,11 @@ group work from team SBFS
    (sudo) yum install -y devtoolset-9
    scl enable devtoolset-9 bash
    ```
+   
    this will install gcc-9 which is need to compile fuse3, and add it to the environment variable  
+   
    if you run `scl enable devtoolset-9 bash` as root, then gcc version is 9 when you make the project as root  
+   
    so make sure you `scl enable devtoolset-9 bash` and make the project both as root or user  
    
 4. Setup the file system

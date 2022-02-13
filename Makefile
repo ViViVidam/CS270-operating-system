@@ -1,12 +1,12 @@
 CC = gcc
 
 run:  disk.c nodes.c SBFS.c sbFuse.c
-	$(CC) -Wall disk.c nodes.c SBFS.c sbFuse.c -lm `pkg-config fuse3 --cflags --libs` -o main
+	$(CC) -Wall disk.c nodes.c SBFS.c sbFuse.c -lm -std=c11 `pkg-config fuse3 --cflags --libs` -o main
 	./main mount
 	echo "hello world!" > mount/hello
 
 debug: disk.c nodes.c SBFS.c sbFuse.c
-	$(CC) -Wall disk.c nodes.c SBFS.c sbFuse.c -lm -std=c99 `pkg-config fuse3 --cflags --libs` -o main
+	$(CC) -Wall disk.c nodes.c SBFS.c sbFuse.c -lm -std=c11 `pkg-config fuse3 --cflags --libs` -o main
 	./main -f mount
 
 disk:

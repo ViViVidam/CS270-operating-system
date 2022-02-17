@@ -629,3 +629,22 @@ void create_root_dir()
 	}
 	return 0;
 }*/
+
+/*TODO:
+
+1. Create a symbolic link
+symlink(path, link)
+2. Rename a file
+rename(path, newpath)
+3. create a hard link
+link(path, newpath)
+4. change permission
+chmod(path, mode)
+5. change owner
+chown(path, uid, gid)
+6. change size of a file
+truncate(path, newsize)
+7. change access/ modification time
+utime(path, ubuf)
+8. 
+*/

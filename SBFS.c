@@ -609,6 +609,7 @@ void create_root_dir()
 	read_inode(root, &root_node);
 	root_node.size = 0;
 	root_node.type = DIRECTORY;
+    printf("%d\n",root_node.flag);
 	write_inode(root, &root_node);
 }
 /*int main()

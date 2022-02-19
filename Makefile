@@ -1,7 +1,6 @@
 CC = gcc
 
 run:  disk.c nodes.c SBFS.c sbFuse.c
-	mkdir mount
 	$(CC) -Wall disk.c nodes.c SBFS.c sbFuse.c -lm `pkg-config fuse3 --cflags --libs` -o main
 	./main mount
 	echo "hello world!" > mount/hello

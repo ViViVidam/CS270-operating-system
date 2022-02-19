@@ -2,13 +2,15 @@
 #include <string.h>
 #include <math.h>
 #include <assert.h>
-
+#include <stdlib.h>
 #include "nodes.h"
 
 #define INODE_PER_BLOCK (BLOCKSIZE / sizeof(inode))
 
 static uint64_t head = 0;
 static uint64_t i_list_block_count = 0;
+/* the entire inode is loaded into memory, mapping from inum to index is inum - 1 = index*/
+static inode* in_mem_ilist;
 
 uint64_t read_head(){
     return head;
@@ -41,9 +43,10 @@ void write_inode(uint64_t inum, inode *node)
 	uint64_t offset = (inum - 1) % INODE_PER_BLOCK;
 	read_disk(block_id, data);
 	inode *inodes = (inode *)data;
-
+    assert(node->flag==1);
 	/* length is used to escape zero out the memory when allocate inode in user space */
 	cp_inode(&inodes[offset], node);
+    cp_inode(in_mem_ilist + (inum - 1),node);
 	write_disk(block_id, data);
 }
 
@@ -123,6 +126,8 @@ void init_i_list()
 	{
 		write_disk(i, tmp);
 	}
+    in_mem_ilist = (inode*)malloc(INODE_PER_BLOCK*i_list_block_count*sizeof(inode));
+    memset(in_mem_ilist,0,INODE_PER_BLOCK*i_list_block_count*sizeof(inode));
 }
 
 void mkfs()
@@ -149,60 +154,44 @@ void mkfs()
     //printf("header %ld\n",head);
 }
 
-/* 
-	inum start from zero
-	I don't think it needs to be reading a length
-*/
-void read_inode(uint64_t inum, inode *node)
-{
-	char data[BLOCKSIZE];
-	uint32_t block_id = 1 + (inum - 1) / INODE_PER_BLOCK;
-	uint32_t offset = (inum - 1) % INODE_PER_BLOCK;
-    assert(block_id<=i_list_block_count);
-	read_disk(block_id, data);
-	inode *inodes = (inode*) data;
-	cp_inode(node, &inodes[offset]);
+/*
+ * inode count starts from 1,
+ * this function used only for higher level
+ * same level can read direct from in_mem_list
+ * */
+void read_inode(uint64_t inum, inode *node){
+	cp_inode(node, in_mem_ilist + (inum-1) );
 }
 
 /* zero for failure */
-uint64_t allocate_inode()
-{
+uint64_t allocate_inode() {
 	char tmp[BLOCKSIZE];
-	int i, j, flag = 0, inum;
-	inode *inode_block = (inode*) tmp;
-	for (i = 1; i <= i_list_block_count; i++)
+	int i, flag = 0;
+	for (i = 1; i <= i_list_block_count*INODE_PER_BLOCK; i++)
 	{
-		read_disk(i, tmp);
-		for (j = 0; j < INODE_PER_BLOCK; j++)
-		{
-			if (inode_block[j].flag == 0)
-			{
-                //printf("flag %ld %ld %ld\n",i,j,inode_block[j].flag);
-				flag = 1;
-				break;
-			}
-		}
-        if(flag)
+		if(in_mem_ilist[i-1].flag==0){
+            int block_id = (i - 1) / INODE_PER_BLOCK;
+            int offset = (i - 1) % INODE_PER_BLOCK;
+            read_disk(block_id,tmp);
+            inode* inodes = (inode*) tmp;
+            inodes[offset].flag = 1;
+            in_mem_ilist[i-1].flag = 1;
+            write_disk(block_id,tmp);
+            flag = 1;
             break;
+        }
 	}
-	if (flag){
-		inum = (i - 1) * INODE_PER_BLOCK + j + 1;
-        //printf("inum %ld %ld %ld\n",i,j,inum);
-		inode_block[j].flag = 1;
-		write_disk(i,tmp);
-        //printf("flag %ld %ld %ld\n",i,j,inode_block[j].flag);
-	}
-	else {
+	if(!flag){
         printf("inode full\n");
-        inum = 0;
+        i = 0;
     }
-	return inum;
+	return i;
 }
 
-int free_inode(uint64_t inum)
-{
+int free_inode(uint64_t inum) {
 	uint64_t block_id = 1 + (inum - 1) / INODE_PER_BLOCK;
 	uint32_t offset = (inum - 1) % INODE_PER_BLOCK;
+    memset(in_mem_ilist + (inum - 1),0,sizeof(inode));
 	inode tmp;
 	if (block_id > i_list_block_count)
 	{
@@ -253,8 +242,7 @@ int free_inode(uint64_t inum)
 	return 0;
 }
 
-uint64_t allocate_data_block()
-{
+uint64_t allocate_data_block() {
 	uint8_t tmp[BLOCKSIZE];
 	uint64_t *data = (uint64_t *)tmp;
 	read_block(head, 0, BLOCKSIZE, tmp);

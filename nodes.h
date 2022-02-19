@@ -25,10 +25,10 @@ int read_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);
 
 void read_inode(uint64_t inum,inode* node);
 void write_inode(uint64_t inum,inode* node);
-
-int free_data_block(uint64_t id);
 int free_inode(uint64_t inum);
 uint64_t allocate_inode();
+
+int free_data_block(uint64_t id);
 uint64_t allocate_data_block();
 void mkfs();
 

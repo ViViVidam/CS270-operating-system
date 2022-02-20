@@ -42,9 +42,9 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 	//fi->fh = inum;
 	inode node;
 	read_inode(inum, &node);
-	printf("read node inum %ld\n", inum);
-	if (node.type == DIRECTORY)
+	if ( (node.permission_bits & FILEMASK) >> 12 == DIR)
 	{
+        printf("read node inum %ld\n", inum);
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 		stbuf->st_size = node.size;
@@ -73,7 +73,7 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	inode node;
 	read_inode(inum, &node);
     printf("npde size %ld %ld\n",inum,node.size);
-	if (node.type != DIRECTORY)
+	if ( (node.permission_bits & FILEMASK) >> 12 != DIR)
 	{
 		printf("read dir failed.\n");
 		return -1;

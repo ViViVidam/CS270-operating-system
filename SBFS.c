@@ -15,6 +15,12 @@ uint64_t block_id_helper(inode *node, int index, int mode);
 void SBFS_readdir_raw(uint64_t inum, int entry_index, dir *entry);
 void create_root_dir();
 
+void setFiletype(inode* node,int type){
+    node->permission_bits = node->permission_bits & 0x8fff;
+    type = type << 12;
+    node->permission_bits = node->permission_bits | type;
+}
+
 char *SBFS_clean_path(char *path)
 {
 	int state = 0;
@@ -99,7 +105,7 @@ uint64_t find_file_entry(uint64_t inum, char *filename)
 {
 	inode node;
 	read_inode(inum, &node);
-	assert(node.type == DIRECTORY);
+	assert( (node.permission_bits & FILEMASK) >> 12 == DIR);
 	int entry_count = node.size / sizeof(dir);
 	dir entry;
 	assert((node.size % sizeof(dir)) == 0);
@@ -146,7 +152,7 @@ uint64_t SBFS_namei(char *path)
 		{
 			inode node;
 			read_inode(inum, &node);
-			if (node.type != DIRECTORY)
+			if ( (node.permission_bits & FILEMASK) >> 12 == DIR)
 			{
 				printf("%sit is not a dir\n", filename);
 				return 0;
@@ -163,7 +169,6 @@ uint64_t SBFS_namei(char *path)
 	return 1; // the path end with /
 }
 
-//TODO: 是不是要return read size
 int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 {
 	char *buffer = (char *)buf;
@@ -293,7 +298,7 @@ uint64_t SBFS_mkdir(char *path)
 	{
 		inode parent_node;
 		read_inode(parent_path_inum, &parent_node);
-		if (parent_node.type != DIRECTORY)
+		if ( (parent_node.permission_bits & FILEMASK) >> 12 != DIR)
 		{
 			printf("path:%s not a dir\n", parent_path);
 			return 0;
@@ -303,7 +308,7 @@ uint64_t SBFS_mkdir(char *path)
 			inode node;
 			child_inum = allocate_inode();
 			read_inode(child_inum, &node);
-			node.type = DIRECTORY;
+            setFiletype(&node,DIR);
 			node.size = 0;
 			write_inode(child_inum, &node);
 			add_entry_to_dir(parent_path_inum, filename, child_inum);
@@ -342,7 +347,7 @@ uint64_t SBFS_mknod(char *path)
 	{
 		inode parent_node;
 		read_inode(parent_path_inum, &parent_node);
-		if (parent_node.type != DIRECTORY)
+		if ( (parent_node.permission_bits & FILEMASK) >> 12 != DIR)
 		{
 			return 0;
 		}
@@ -351,8 +356,7 @@ uint64_t SBFS_mknod(char *path)
 			inode node;
 			child_inum = allocate_inode();
 			read_inode(child_inum, &node);
-			node.type = NORMAL;
-			node.size = 0;
+            setFiletype(&node,NORMAL);
 			write_inode(child_inum, &node);
 			add_entry_to_dir(parent_path_inum, filename, child_inum);
 		}
@@ -379,7 +383,7 @@ int SBFS_rmdir(char *path)
 	printf("rmdir %s: inum %ld\n", path, inum);
 
 	read_inode(inum, &node);
-	if (node.type != DIRECTORY || node.size != 0)
+	if ( (node.permission_bits & FILEMASK) >> 12 != DIR || node.size != 0)
 	{
 		printf("\npath: %s is not an empty directory.\n", path);
 		return -1;
@@ -408,7 +412,7 @@ int SBFS_unlink(char *path)
 	printf("unlink %ld\n", inum);
 	read_inode(inum, &node);
 	uint64_t parent_path_inum ;
-	if (node.type != NORMAL)
+	if ( (node.permission_bits & FILEMASK) >> 12 != NORMAL)
 	{
 		printf("\n%s is not a file\n", path);
 		return -1;
@@ -453,7 +457,7 @@ dir *SBFS_readdir(uint64_t inum,int init)
             i = 0;
             present_inum = inum;
             read_inode(inum, &node);
-            assert(node.type == DIRECTORY);
+            assert( (node.permission_bits & FILEMASK) >> 12 == DIR);
             item_count = node.size / sizeof(dir);
         }
         printf("SBFS_readdir inum %ld itemcount %ld %ld\n", inum, node.size, item_count);
@@ -607,8 +611,9 @@ void create_root_dir()
 	uint64_t root = allocate_inode();
 	assert(root == ROOT);
 	read_inode(root, &root_node);
-	root_node.size = 0;
-	root_node.type = DIRECTORY;
+	printf("root %x\n",root_node.permission_bits);
+    setFiletype(&root_node,DIR);
+    printf("root %x\n",root_node.permission_bits);
 	write_inode(root, &root_node);
 }
 /*int main()

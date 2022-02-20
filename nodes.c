@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "nodes.h"
 
+
 #define INODE_PER_BLOCK (BLOCKSIZE / sizeof(inode))
 
 static uint64_t head = 0;
@@ -30,9 +31,11 @@ void cp_inode(inode *dest, inode *source)
     for (int i = 0; i < (TRIP_INDIR);i++){
         dest->trip_indirect_blocks[i] = source->trip_indirect_blocks[i];
     }
-	dest->flag = source->flag;
-	dest->type = source->type;
+	dest->permission_bits = source->permission_bits;
+    printf("from cp inode %x %x\n",dest->permission_bits,source->permission_bits);
 	dest->size = source->size;
+    dest->time = source->time;
+    dest->owner = source->owner;
 }
 
 void write_inode(uint64_t inum, inode *node)
@@ -43,7 +46,8 @@ void write_inode(uint64_t inum, inode *node)
 	uint64_t offset = (inum - 1) % INODE_PER_BLOCK;
 	read_disk(block_id, data);
 	inode *inodes = (inode *)data;
-    assert(node->flag==1);
+    printf("%ld %x\n",inum,node->permission_bits);
+    assert((node->permission_bits & FLAGMASK) == 0x8000);
 	/* length is used to escape zero out the memory when allocate inode in user space */
 	cp_inode(&inodes[offset], node);
     cp_inode(in_mem_ilist + (inum - 1),node);
@@ -167,15 +171,15 @@ void read_inode(uint64_t inum, inode *node){
 uint64_t allocate_inode() {
 	char tmp[BLOCKSIZE];
 	int i, flag = 0;
-	for (i = 1; i <= i_list_block_count*INODE_PER_BLOCK; i++)
-	{
-		if(in_mem_ilist[i-1].flag==0){
+	for (i = 1; i <= i_list_block_count*INODE_PER_BLOCK; i++){
+		if( (in_mem_ilist[i-1].permission_bits & FLAGMASK) == 0){
             int block_id = (i - 1) / INODE_PER_BLOCK;
             int offset = (i - 1) % INODE_PER_BLOCK;
             read_disk(block_id,tmp);
             inode* inodes = (inode*) tmp;
-            inodes[offset].flag = 1;
-            in_mem_ilist[i-1].flag = 1;
+            inodes[offset].permission_bits = inodes[offset].permission_bits | (1 << 15);
+            in_mem_ilist[i-1].permission_bits = in_mem_ilist[i-1].permission_bits | (1 << 15);
+            printf("allocate inode %d %x\n",i ,inodes[offset].permission_bits & FLAGMASK);
             write_disk(block_id,tmp);
             flag = 1;
             break;
@@ -234,9 +238,10 @@ int free_inode(uint64_t inum) {
 		else
 			break;
 	}
-	tmp.flag = 0;
+    tmp.time = 0;
+    tmp.owner =0;
+    tmp.permission_bits = 0;
 	tmp.size = 0;
-	tmp.type = 0;
 	write_block(block_id, sizeof(inode) * offset, sizeof(inode), &tmp);
 
 	return 0;

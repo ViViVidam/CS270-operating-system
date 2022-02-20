@@ -1,11 +1,26 @@
 #include "disk.h"
 #include <stdint.h>
+#include <time.h>
 
 #define BLOCKADDR 8
 #define DIRECT_BLOCK 10
 #define SING_INDIR 1
 #define DOUB_INDIR 1
 #define TRIP_INDIR 1
+
+#define FILEMASK 0x7000
+#define FLAGMASK 0x8000
+#define USERBMASK 0x0800
+#define GROUPBMASK 0x0400
+#define STICKBIT 0x0200
+#define OWNERMASK 0x01c0
+#define GROUPMASK 0x38
+#define WORLDMASK 0x7
+
+enum {
+    NORMAL, DIR, SYMBOLIC, BLOCKDEVICE, CHARDEVICE, SOCK, PIPE
+};// -,d,l,b,c,s,p
+
 //assert
 typedef struct { 
 	//uint64_t blocks[13];
@@ -14,9 +29,11 @@ typedef struct {
 	uint64_t sing_indirect_blocks[SING_INDIR];//88
 	uint64_t doub_indirect_blocks[DOUB_INDIR];//96
 	uint64_t trip_indirect_blocks[TRIP_INDIR];//104
-	uint64_t type;//112
-	uint64_t flag;//120 this is set to 64bit because of alignment
 	uint64_t size;//128
+    time_t time;//32bits or 64bits
+    uint16_t owner;
+    uint16_t permission_bits;
+    //flag, FILETYPE(3 bits), set user bit, set group ID bit, sticky bit, 9-bits
 } inode;
 
 int write_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);

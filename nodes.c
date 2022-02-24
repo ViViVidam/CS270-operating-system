@@ -32,10 +32,12 @@ void cp_inode(inode *dest, inode *source)
         dest->trip_indirect_blocks[i] = source->trip_indirect_blocks[i];
     }
 	dest->permission_bits = source->permission_bits;
-    printf("from cp inode %x %x\n",dest->permission_bits,source->permission_bits);
 	dest->size = source->size;
-    dest->time = source->time;
+    dest->last_access_time = source->last_access_time;
+    dest->last_modify_time = source->last_modify_time;
     dest->owner = source->owner;
+    dest->link = source->link;
+    dest->link = source->link;
 }
 
 void write_inode(uint64_t inum, inode *node)
@@ -46,7 +48,6 @@ void write_inode(uint64_t inum, inode *node)
 	uint64_t offset = (inum - 1) % INODE_PER_BLOCK;
 	read_disk(block_id, data);
 	inode *inodes = (inode *)data;
-    printf("%ld %x\n",inum,node->permission_bits);
     assert((node->permission_bits & FLAGMASK) == 0x8000);
 	/* length is used to escape zero out the memory when allocate inode in user space */
 	cp_inode(&inodes[offset], node);
@@ -178,8 +179,10 @@ uint64_t allocate_inode() {
             read_disk(block_id,tmp);
             inode* inodes = (inode*) tmp;
             inodes[offset].permission_bits = inodes[offset].permission_bits | (1 << 15);
+            inodes[offset].link = 1;
             in_mem_ilist[i-1].permission_bits = in_mem_ilist[i-1].permission_bits | (1 << 15);
-            printf("allocate inode %d %x\n",i ,inodes[offset].permission_bits & FLAGMASK);
+            in_mem_ilist[i-1].link = 1;
+//            printf("allocate inode %d %x\n",i ,inodes[offset].permission_bits & FLAGMASK);
             write_disk(block_id,tmp);
             flag = 1;
             break;
@@ -238,7 +241,8 @@ int free_inode(uint64_t inum) {
 		else
 			break;
 	}
-    tmp.time = 0;
+    tmp.last_modify_time = 0;
+    tmp.last_access_time = 0;
     tmp.owner =0;
     tmp.permission_bits = 0;
 	tmp.size = 0;

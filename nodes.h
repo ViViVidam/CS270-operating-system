@@ -1,6 +1,7 @@
+#ifndef CS270_NODE_H
+#define CS270_NODE_H
 #include "disk.h"
 #include <stdint.h>
-#include <time.h>
 
 #define BLOCKADDR 8
 #define DIRECT_BLOCK 10
@@ -30,8 +31,11 @@ typedef struct {
 	uint64_t doub_indirect_blocks[DOUB_INDIR];//96
 	uint64_t trip_indirect_blocks[TRIP_INDIR];//104
 	uint64_t size;//128
-    time_t time;//32bits or 64bits
+    uint64_t last_access_time;
+    uint64_t last_modify_time;
+    uint16_t link;//hard link count
     uint16_t owner;
+    uint16_t group;
     uint16_t permission_bits;
     //flag, FILETYPE(3 bits), set user bit, set group ID bit, sticky bit, 9-bits
 } inode;
@@ -50,3 +54,5 @@ uint64_t allocate_data_block();
 void mkfs();
 
 uint64_t read_head();//debuging purpose
+
+#endif

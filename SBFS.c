@@ -607,6 +607,7 @@ int SBFS_chown(char* path,uint16_t uid,uint16_t gid) {
     write_inode(inum, &node);
     return 1;
 }
+/*
 int main()
 {
     char buf[] = "hello world";
@@ -621,12 +622,11 @@ int main()
     SBFS_write(inum,0,sizeof(buf),buf);
     SBFS_truncate("/bcd/testtest1",4);
     SBFS_chmod("/bcd/testtest1",777);
-    /*
     int res = SBFS_rename("/testtest1","/abc/testtest1",EXCHANGE);
     if(res == 0){
         printf("failed rename\n");
         return 0;
-    }*/
+    }
 
     uint64_t read_size = SBFS_read(inum,0,BLOCKSIZE,read_buf);
     printf("%s\n",read_buf);
@@ -636,7 +636,7 @@ int main()
 	}
 	return 0;
 }
-
+*/
 /*TODO:
 
 1. Create a symbolic link (passed)

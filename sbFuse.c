@@ -39,12 +39,12 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 		return -ENOENT;
 	else
 		printf("inum %ld\n", inum);
-	//fi->fh = inum;
+	// fi->fh = inum;
 	inode node;
 	read_inode(inum, &node);
-	if ( (node.permission_bits & FILEMASK) >> 12 == DIR)
+	if ((node.permission_bits & FILEMASK) >> 12 == DIR)
 	{
-        printf("read node inum %ld\n", inum);
+		printf("read node inum %ld\n", inum);
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 		stbuf->st_size = node.size;
@@ -72,8 +72,8 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	uint64_t inum = fi->fh;
 	inode node;
 	read_inode(inum, &node);
-    printf("npde size %ld %ld\n",inum,node.size);
-	if ( (node.permission_bits & FILEMASK) >> 12 != DIR)
+	printf("npde size %ld %ld\n", inum, node.size);
+	if ((node.permission_bits & FILEMASK) >> 12 != DIR)
 	{
 		printf("read dir failed.\n");
 		return -1;
@@ -87,10 +87,10 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		filler(buf, "..", NULL, 0, 0);
 		// read file in path 1 by 1
 		while (1)
-		{	
-			printf("call readdir on inum %ld\n", inum);
-			dir *dr = SBFS_readdir(inum,0);
-			printf("get dir pointer: 0x%08x\n", dr);
+		{
+			// printf("call readdir on inum %ld\n", inum);
+			dir *dr = SBFS_readdir(inum, 0);
+			// printf("get dir pointer: 0x%08x\n", dr);
 			if (dr)
 			{
 				printf("add filename: %s to filler\n", dr->filename);
@@ -98,12 +98,12 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			}
 			else
 			{
-                printf("dir null\n");
+				//printf("dir null\n");
 				break;
 			}
 		}
 	}
-    SBFS_readdir(0,1);
+	SBFS_readdir(0, 1);
 	return 0;
 }
 
@@ -112,7 +112,7 @@ static int sb_opendir(const char *path, struct fuse_file_info *fi)
 	printf("\nsb_opendir(path=\"%s\", fi=0x%08x)\n", path, fi);
 	uint64_t inum = SBFS_namei(path);
 
-	//wrong inum
+	// wrong inum
 	if (inum == 0)
 	{
 		printf("open dir failed.\n");
@@ -202,14 +202,14 @@ static int sb_write(const char *path, const char *buf, size_t size,
 {
 	printf("\nsb_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
 		   path, buf, size, offset, fi);
-    uint64_t inum = SBFS_namei(path);
-    if( inum == 0)
-        return 0;
-    printf("inunm %ld\n",inum);
+	uint64_t inum = SBFS_namei(path);
+	if (inum == 0)
+		return 0;
+	printf("inunm %ld\n", inum);
 	int ret = SBFS_write(inum, offset, size, buf);
-    char temp[4096];
-    SBFS_read(inum, offset, size, temp);
-    printf("%s\n",temp);
+	char temp[4096];
+	SBFS_read(inum, offset, size, temp);
+	printf("%s\n", temp);
 	return size;
 }
 
@@ -217,7 +217,7 @@ static int sb_release(const char *path, struct fuse_file_info *fi)
 {
 	printf("\nsb_release(path=\"%s\", fi=0x%08x)\n", path, fi);
 	int ret = SBFS_close(SBFS_namei(path));
-	return 1;
+	return 0;
 }
 
 /** Remove a file */
@@ -225,23 +225,74 @@ static int sb_unlink(const char *path)
 {
 	printf("\nsb_unlink(path=\"%s\")\n", path);
 	int ret = SBFS_unlink(path);
-	return 0;
+	return ret;
 }
 /** Remove a directory */
 static int sb_rmdir(const char *path)
 {
 	printf("\nsb_rmdir(path=\"%s\")\n", path);
 	int ret = SBFS_rmdir(path);
-	return 0;
+	return ret;
 }
 
 static int sb_utimens(const char *path, const struct timespec tv[2], struct fuse_file_info *fi)
 {
+	int ret = SBFS_utime(path, tv[2]);
+	return ret > 0 ? 0 : -1;
+}
+
+static int sb_readlink(const char *path, char *buf, size_t size)
+{
 	return 0;
+}
+
+static int sb_symlink(const char *path, const char *link)
+{
+	printf("\nsb_symlink(path=\"%s\", link=\"%s\")\n", path, link);
+	int ret = SBFS_symlink(path, link);
+	return ret > 0 ? 0 : -1;
+}
+
+static int sb_rename(const char *path, const char *newpath, unsigned int flags)
+{
+	printf("\nsb_rename(path=\"%s\", newpath=\"%s\")\n", path, newpath);
+	int ret = SBFS_rename(path, newpath, flags == RENAME_EXCHANGE ? EXCHANGE : NOREPLACE);
+	return ret > 0 ? 0 : -1;
+}
+
+static int sb_link(const char *path, const char *newpath)
+{
+	printf("\nsb_link(path=\"%s\", newpath=\"%s\")\n", path, newpath);
+	int ret = SBFS_link(path, newpath);
+	return ret > 0 ? 0 : -1;
+}
+static int sb_chmod(const char *path, mode_t mode, struct fuse_file_info *fi)
+{
+	printf("\nsb_chmod(path=\"%s\", mode=%d, fi=0x%08x)\n", path, mode, fi);
+	(void)fi;
+	int ret = SBFS_chmod(path, mode);
+	return ret > 0 ? 0 : -1;
+}
+
+static int sb_chown(const char * path, uid_t uid, gid_t gid, struct fuse_file_info *fi)
+{
+	printf("\nsb_chown(path=\"%s\", uid=%d, gid = %d, fi=0x%08x)\n", path, uid, gid, fi);
+	(void)fi;
+	int ret = SBFS_chmod(path, uid, gid);
+	return ret > 0 ? 0 : -1;
+}
+
+static int sb_truncate(const char * path, off_t newsize, struct fuse_file_info *fi)
+{
+	printf("\nsb_truncate(path=\"%s\", newsize=%d, fi=0x%08x)\n", path, newsize, fi);
+	(void)fi;
+	int ret = SBFS_truncate(path, newsize);
+	return ret > 0 ? 0 : -1;
 }
 
 static const struct fuse_operations sb_oper = {
 	.init = sb_init,
+	.readlink = sb_readlink,
 	.getattr = sb_getattr,
 	.opendir = sb_opendir,
 	.readdir = sb_readdir,
@@ -255,7 +306,12 @@ static const struct fuse_operations sb_oper = {
 	.unlink = sb_unlink,
 	.rmdir = sb_rmdir,
 	.utimens = sb_utimens,
-
+	.symlink = sb_symlink,
+	.rename = sb_rename,
+	.link = sb_link,
+	.chmod = sb_chmod,
+	.chown = sb_chown,
+	.truncate = sb_truncate,
 };
 
 int main(int argc, char *argv[])

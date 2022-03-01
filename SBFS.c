@@ -31,7 +31,7 @@ int SBFS_getattr(char* path, struct stat* file_state){
  * failed -1
  * success the size of the buf
  * **/
-unsigned long SBFS_readlink(char* path,char* buf) {
+unsigned long SBFS_readlink(char* path, char* buf) {
     uint64_t inum = SBFS_namei(path);
     if (inum == 0)
         return -1;

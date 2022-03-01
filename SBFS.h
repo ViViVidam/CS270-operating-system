@@ -10,7 +10,7 @@ uint64_t SBFS_open(char *filename, int mode);
 int SBFS_close(int inum);
 uint64_t SBFS_mkdir(char *path);
 uint64_t SBFS_mknod(char *path);
-unsigned long SBFS_readlink(char* path,char* buf);
+unsigned long SBFS_readlink(char* path, char* buf);
 int SBFS_rmdir(char *path);
 int SBFS_unlink(char *path);
 dir *SBFS_readdir(uint64_t inum,int init);

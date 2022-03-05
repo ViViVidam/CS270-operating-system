@@ -6,7 +6,9 @@
 
 #include "SBFSStruct.h"
 #include <stdint.h>
+#include <stddef.h>
 
+int getMountPoint(char* buf,size_t size);
 uint64_t get_nanos(void);
 uint64_t read_symlink(uint64_t symlink_inum);
 void setFiletype(inode* node,int type);

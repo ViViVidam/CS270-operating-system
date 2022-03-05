@@ -10,8 +10,8 @@
 #define MAX_FILENAME 64
 #define MAX_PATH 1024
 #define ROOT 1
-#define NOREPLACE 1
-#define EXCHANGE 2
+#define NOREPLACE (1 << 0)
+#define EXCHANGE (1 << 1)
 
 #define H_CREATE 1
 #define H_READ 2

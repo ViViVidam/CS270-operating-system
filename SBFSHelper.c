@@ -135,7 +135,7 @@ int find_file_entry(uint64_t inum, char *entryname,dir* ety)
     for (int i = 0; i < entry_count; i++)
     {
         SBFS_readdir_raw(inum, i, &entry);
-        if (strcmp(entryname, entry.filename) == 0) {
+        if (strcmp(entryname, entry.filename) == 0 && entry.inum != 0) {
             if(ety != NULL){
                 ety->inum = entry.inum;
                 strcpy(ety->filename,entry.filename);
@@ -287,4 +287,28 @@ uint64_t block_id_helper(inode *node, int index, int mode)
         }
         return address[index];
     }
+}
+
+
+int getMountPoint(char* buf,size_t size) {
+    char line[128];
+    size_t line_size = 128;
+    FILE *fp = fopen("/proc/mounts", "r");
+    if(fp==NULL)
+        return 0;
+    while (fgets(line, 128, fp)) {
+        printf("%s\n",line);
+        if (line[0] == 'm' && line[1] == 'a' && line[2] == 'i' && line[3] == 'n' && line[4] == ' ') {
+            int i = 5;
+            while (line[i] != ' ' && (i - 5) < size && line[i] != 0) {
+                buf[i - 5] = line[i];
+                i++;
+            }
+            buf[i - 5] = 0;
+            fclose(fp);
+            return 1;
+        }
+    }
+    fclose(fp);
+    return 0;
 }

@@ -31,7 +31,7 @@ int SBFS_getattr(char* path, struct stat* file_state){
  * failed -1
  * success the size of the buf
  * **/
-unsigned long SBFS_readlink(char* path, char* buf) {
+int SBFS_readlink(char* path, char* buf, unsigned long size) {
     uint64_t inum = SBFS_namei(path);
     if (inum == 0)
         return -1;
@@ -40,8 +40,13 @@ unsigned long SBFS_readlink(char* path, char* buf) {
     if ((node.permission_bits & FILEMASK) >> 12 != SYMBOLIC) {
         return -1;
     }
-    read_block(node.direct_blocks[0], 0, node.size, buf);
-    return node.size;
+    if(size < node.size) {
+        read_block(node.direct_blocks[0], 0, size, buf);
+        buf[size-1] = 0;
+    }
+    else
+        read_block(node.direct_blocks[0], 0, node.size, buf);
+    return 0;
 }
 
 uint64_t SBFS_namei(char *path) {
@@ -330,7 +335,7 @@ int SBFS_unlink(char *path) {
     printf("unlink %ld\n", entry.inum);
     read_inode(entry.inum, &node);
 
-    if ((node.permission_bits & FILEMASK) >> 12 != NORMAL) {
+    if ((node.permission_bits & FILEMASK) >> 12 != NORMAL && (node.permission_bits & FILEMASK) >> 12 != SYMBOLIC) {
         printf("\n%s is not a file\n", path);
         return -1;
     } else {
@@ -361,6 +366,9 @@ void SBFS_init()
 {
 	mkfs();
 	create_root_dir();
+    int res = getMountPoint(mountpoint,256);
+    assert(res!=0);
+    printf("mountpoint %s\n",mountpoint);
 }
 
 /**
@@ -499,39 +507,45 @@ void create_root_dir() {
  * create a symlink file
  * checking cycle not implemented
  * **/
-int SBFS_symlink(char* path,char* filename){
-    uint64_t inum = SBFS_namei(path);
+int SBFS_symlink(char* path,char* filename) {
     dir entry;
     char entry_name[MAX_FILENAME];
-    if(inum==0){
-        printf("path %s not found\n",path);
-        return 0;
-    }
-    get_entryname(filename,entry_name);
+    // convert needs to be made for symlink
+    /*
+       path[0]='/';
+      uint64_t inum = SBFS_namei(path);
+
+       if(inum==0){
+           printf("path %s not found\n",path);
+           return 0;
+       }*/
+    printf("SBFS_symlinl %s\n",path);
+    get_entryname(filename, entry_name);
     uint64_t new_parent_inum = find_parent_dir_inum(filename);
-    if(new_parent_inum == 0){
-        printf("parent path %s not found",filename);
+    if (new_parent_inum == 0) {
+        printf("parent path %s not found", filename);
         return 0;
     }
-    int index = find_file_entry(new_parent_inum,entry_name,&entry);
-    if(index != -1){
-        printf("new file %s already exists\n",entry_name);
+    int index = find_file_entry(new_parent_inum, entry_name, &entry);
+    if (index != -1) {
+        printf("new file %s already exists\n", entry_name);
         return 0;
     }
     inode node;
     uint64_t new_inum = allocate_inode();
-    read_inode(inum,&node);
-    assert(node.link==1);
+    read_inode(new_inum, &node);
+    assert(node.link > 0);
     node.permission_bits &= ~FILEMASK;
     node.permission_bits |= (SYMBOLIC << 12) & FILEMASK;
     char buf[400];
-    strcpy(buf,path);
+    strcpy(buf, path);
     node.direct_blocks[0] = allocate_data_block();
-    if(node.direct_blocks[0]==0)
+    if (node.direct_blocks[0] == 0)
         return 0;
-    write_block(node.direct_blocks[0],0,strlen(buf),buf);
-    add_entry_to_dir(new_parent_inum,entry_name,new_inum);
-    write_inode(new_inum,&node);
+    write_block(node.direct_blocks[0], 0, strlen(buf), buf);
+    node.size = strlen(buf);
+    add_entry_to_dir(new_parent_inum, entry_name, new_inum);
+    write_inode(new_inum, &node);
     return 1;
 }
 

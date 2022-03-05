@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <fuse.h>
 #include <time.h>
+#include "sbFuseHelper.h"
 
 static void *sb_init(struct fuse_conn_info *conn,
 					 struct fuse_config *cfg)
@@ -33,8 +34,8 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 	stbuf->st_gid = getgid();
 	stbuf->st_atime = time(NULL);
 	stbuf->st_mtime = time(NULL);
-
 	uint64_t inum = SBFS_namei(path);
+    //stbuf->st_ino = inum;
 	if (inum == 0)
 		return -ENOENT;
 	else
@@ -44,15 +45,24 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 	read_inode(inum, &node);
 	if ((node.permission_bits & FILEMASK) >> 12 == DIR)
 	{
-		printf("read node inum %ld\n", inum);
-		stbuf->st_mode = S_IFDIR | 0755;
+		printf("read node dir inum %ld\n", inum);
+		stbuf->st_mode = S_IFDIR;
 		stbuf->st_nlink = 2;
 		stbuf->st_size = node.size;
 	}
+    else if((node.permission_bits & FILEMASK) >> 12 == SYMBOLIC){
+        printf("read node symlink inum %ld\n", inum);
+        stbuf->st_mode = S_IFLNK;
+        printf("%d %d size:%d mode:%x\n", S_ISLNK(stbuf->st_mode), S_ISREG(stbuf->st_mode),node.size,stbuf->st_mode);
+        stbuf->st_nlink = node.link| 0777;
+        stbuf->st_blocks = 1;
+        stbuf->st_size = node.size;
+        //lstat(path,stbuf);
+    }
 	else
 	{
-		stbuf->st_mode = S_IFREG | 0644;
-		stbuf->st_nlink = 1;
+		stbuf->st_mode = S_IFREG;
+		stbuf->st_nlink = node.link;
 		stbuf->st_size = node.size;
 	}
 
@@ -237,26 +247,32 @@ static int sb_rmdir(const char *path)
 
 static int sb_utimens(const char *path, const struct timespec tv[2], struct fuse_file_info *fi)
 {
-	int ret = SBFS_utime(path, tv[2]);
+	int ret = SBFS_utime(path, &tv[2]);
 	return ret > 0 ? 0 : -1;
 }
 
 static int sb_readlink(const char *path, char *buf, size_t size)
 {
+    printf("\nsb_readlink path %s, size %d\n",path,size);
+    SBFS_readlink(path,buf,size);
 	return 0;
 }
 
 static int sb_symlink(const char *path, const char *link)
 {
-	printf("\nsb_symlink(path=\"%s\", link=\"%s\")\n", path, link);
-	int ret = SBFS_symlink(path, link);
+    struct fuse_context* context;
+    context = fuse_get_context();
+    char completePath[200];
+    getCompletePath(path, completePath,context->pid);
+	printf("\nsb_symlink(path=\"%s\", link=\"%s\")\n", completePath, link);
+	int ret = SBFS_symlink(completePath, link);
 	return ret > 0 ? 0 : -1;
 }
 
 static int sb_rename(const char *path, const char *newpath, unsigned int flags)
 {
-	printf("\nsb_rename(path=\"%s\", newpath=\"%s\")\n", path, newpath);
-	int ret = SBFS_rename(path, newpath, flags == RENAME_EXCHANGE ? EXCHANGE : NOREPLACE);
+	printf("\nsb_rename(path=\"%s\", newpath=\"%s\" flag %d)\n", path, newpath,flags);
+	int ret = SBFS_rename(path, newpath, flags);
 	return ret > 0 ? 0 : -1;
 }
 
@@ -278,7 +294,7 @@ static int sb_chown(const char * path, uid_t uid, gid_t gid, struct fuse_file_in
 {
 	printf("\nsb_chown(path=\"%s\", uid=%d, gid = %d, fi=0x%08x)\n", path, uid, gid, fi);
 	(void)fi;
-	int ret = SBFS_chmod(path, uid, gid);
+	int ret = SBFS_chown(path, uid, gid);
 	return ret > 0 ? 0 : -1;
 }
 
@@ -312,6 +328,7 @@ static const struct fuse_operations sb_oper = {
 	.chmod = sb_chmod,
 	.chown = sb_chown,
 	.truncate = sb_truncate,
+    .readlink = sb_readlink
 };
 
 int main(int argc, char *argv[])

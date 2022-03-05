@@ -27,45 +27,10 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 					  struct fuse_file_info *fi)
 {
 	printf("\nsb_getattr(path=\"%s\", stbuf=0x%08x, fi = 0x%08x)\n", path, stbuf, fi);
-
 	memset(stbuf, 0, sizeof(struct stat));
-
-	stbuf->st_uid = getuid();
-	stbuf->st_gid = getgid();
-	stbuf->st_atime = time(NULL);
-	stbuf->st_mtime = time(NULL);
-	uint64_t inum = SBFS_namei(path);
-    //stbuf->st_ino = inum;
-	if (inum == 0)
-		return -ENOENT;
-	else
-		printf("inum %ld\n", inum);
-	// fi->fh = inum;
-	inode node;
-	read_inode(inum, &node);
-	if ((node.permission_bits & FILEMASK) >> 12 == DIR)
-	{
-		printf("read node dir inum %ld\n", inum);
-		stbuf->st_mode = S_IFDIR;
-		stbuf->st_nlink = 2;
-		stbuf->st_size = node.size;
-	}
-    else if((node.permission_bits & FILEMASK) >> 12 == SYMBOLIC){
-        printf("read node symlink inum %ld\n", inum);
-        stbuf->st_mode = S_IFLNK;
-        printf("%d %d size:%d mode:%x\n", S_ISLNK(stbuf->st_mode), S_ISREG(stbuf->st_mode),node.size,stbuf->st_mode);
-        stbuf->st_nlink = node.link| 0777;
-        stbuf->st_blocks = 1;
-        stbuf->st_size = node.size;
-        //lstat(path,stbuf);
-    }
-	else
-	{
-		stbuf->st_mode = S_IFREG;
-		stbuf->st_nlink = node.link;
-		stbuf->st_size = node.size;
-	}
-
+    int res = SBFS_getattr(path,stbuf);
+    if(res==0)
+        return 1;
 	return 0;
 }
 
@@ -154,7 +119,7 @@ static int sb_releasedir(const char *path, struct fuse_file_info *fi)
 static int sb_mknod(const char *path, mode_t mode, dev_t dev)
 {
 	printf("\nsb_mknod(path=\"%s\", mode=0%3o, dev=%lld)\n", path, mode, dev);
-	int ret = SBFS_mknod(path);
+	int ret = SBFS_mknod(path,fuse_get_context()->uid,fuse_get_context()->gid);
 	if (ret == 0)
 	{
 		printf("mknod failed\n");
@@ -170,7 +135,7 @@ static int sb_mknod(const char *path, mode_t mode, dev_t dev)
 static int sb_mkdir(const char *path, mode_t mode)
 {
 	printf("\nsb_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
-	int ret = SBFS_mkdir(path);
+	int ret = SBFS_mkdir(path,fuse_get_context()->uid,fuse_get_context()->gid);
 	if (ret == 0)
 	{
 		printf("mkdir failed\n");
@@ -186,8 +151,7 @@ static int sb_mkdir(const char *path, mode_t mode)
 static int sb_open(const char *path, struct fuse_file_info *fi)
 {
 	printf("\nsb_open(path\"%s\", fi=0x%08x)\n", path, fi);
-
-	uint64_t inum = SBFS_open(path, 1);
+	uint64_t inum = SBFS_open(path,fuse_get_context()->uid,fuse_get_context()->gid,fi->flags);
 	if (inum == 0)
 	{
 		printf("open failed\n");

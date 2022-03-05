@@ -289,6 +289,50 @@ uint64_t block_id_helper(inode *node, int index, int mode)
     }
 }
 
+int checkExcl(const inode* node, unsigned int userId,unsigned int groupId){
+    if (userId == node->owner) {
+        if (((node->permission_bits & OWNERMASK) >> 6 & 0x1)) {
+            return 1;
+        }
+    }
+    if(groupId == node->group){
+        if( (node->permission_bits & GROUPMASK) >> 3 & 0x1)
+            return 1;
+    }
+    if(node->permission_bits & 0x1)
+        return 1;
+    return 0;
+}
+
+int checkWrite(const inode* node, unsigned int userId,unsigned int groupId){
+    if (userId == node->owner) {
+        if (((node->permission_bits & OWNERMASK) >> 7 & 0x1)) {
+            return 1;
+        }
+    }
+    if(groupId == node->group){
+        if( (node->permission_bits & GROUPMASK) >> 4 & 0x1)
+            return 1;
+    }
+    if((node->permission_bits & WORLDMASK) >> 1 & 0x1)
+        return 1;
+    return 0;
+}
+
+int checkRead(const inode* node, unsigned int userId,unsigned int groupId){
+    if (userId == node->owner) {
+        if (((node->permission_bits & OWNERMASK) >> 8 & 0x1)) {
+            return 1;
+        }
+    }
+    if(groupId == node->group){
+        if( (node->permission_bits & GROUPMASK) >> 5 & 0x1)
+            return 1;
+    }
+    if((node->permission_bits & WORLDMASK) >> 2 & 0x1)
+        return 1;
+    return 0;
+}
 
 int getMountPoint(char* buf,size_t size) {
     char line[128];

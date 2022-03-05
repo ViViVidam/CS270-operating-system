@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include "SBFSHelper.h"
-
+#include <fcntl.h>
 
 #define MIN(a, b) ((a > b) ? b : a)
 #define MAX(a, b) ((a > b) ? a : b)
@@ -19,6 +19,23 @@ int SBFS_getattr(char* path, struct stat* file_state){
     file_state->st_uid = node.owner;
     file_state->st_size = node.size;
     file_state->st_nlink = node.link;
+    file_state->st_mode = node.permission_bits;
+    if(ISDIR(node.permission_bits)){
+        file_state->st_mode = S_IFDIR;
+    }
+    else if(ISSYM(node.permission_bits)){
+        file_state->st_mode = S_IFLNK;
+    }
+    else if(ISFILE(node.permission_bits)){
+        file_state->st_mode = S_IFREG;
+    }
+    else
+        return 0;
+    uint16_t stick_user_group = (node.permission_bits & (USERBMASK|GROUPBMASK|STICKBIT)) << 4;
+    uint16_t user = (node.permission_bits&OWNERMASK)<<3;
+    uint16_t group = (node.permission_bits&GROUPMASK) << 2;
+    uint16_t world = (node.permission_bits&WORLDMASK);
+    file_state->st_mode |= (user|group|world);
     file_state->st_atim.tv_nsec = node.last_access_time % 1000000000L;
     file_state->st_atim.tv_sec = node.last_access_time / 1000000000L;
     file_state->st_mtim.tv_nsec = node.last_modify_time % 1000000000L;
@@ -178,7 +195,7 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 /*
 return 0: can not mkdir
 */
-uint64_t SBFS_mkdir(char *path)
+uint64_t SBFS_mkdir(char *path,unsigned int userId,unsigned int groupId)
 {
 	char parent_path[5 * MAX_FILENAME];
 	if (SBFS_namei(path) != 0)
@@ -219,6 +236,10 @@ uint64_t SBFS_mkdir(char *path)
 			child_inum = allocate_inode();
 			read_inode(child_inum, &node);
             setFiletype(&node,DIR);
+            node.owner = userId;
+            node.group = groupId;
+            node.permission_bits |= ((GROUPMASK|OWNERMASK|WORLDMASK)&0x1FD);
+            //rwxrwxr_x
 			node.size = 0;
 			write_inode(child_inum, &node);
 			add_entry_to_dir(parent_path_inum, filename, child_inum);
@@ -227,7 +248,7 @@ uint64_t SBFS_mkdir(char *path)
 	return child_inum;
 }
 
-uint64_t SBFS_mknod(char *path)
+uint64_t SBFS_mknod(char *path,unsigned int userId,unsigned int groupId)
 {
 	char parent_path[5 * MAX_FILENAME];
 	if (SBFS_namei(path) != 0)
@@ -267,6 +288,10 @@ uint64_t SBFS_mknod(char *path)
 			child_inum = allocate_inode();
 			read_inode(child_inum, &node);
             setFiletype(&node,NORMAL);
+            node.owner = userId;
+            node.group = groupId;
+            node.permission_bits |= ((GROUPMASK|OWNERMASK|WORLDMASK)&0x1b4);
+            //rw_rw_r__
 			write_inode(child_inum, &node);
 			add_entry_to_dir(parent_path_inum, filename, child_inum);
 		}
@@ -356,10 +381,22 @@ int SBFS_close(int inum)
 	return 0;
 }
 
-uint64_t SBFS_open(char *filename, int mode)
-{
-	uint64_t inum = SBFS_namei(filename);
-	return inum;
+uint64_t SBFS_open(char *filename, unsigned int userId,unsigned int groupId,unsigned int flag) {
+    uint64_t inum = SBFS_namei(filename);
+    inode node;
+    read_inode(inum, &node);
+    if (flag == O_WRONLY) {
+        return checkWrite(&node,userId,groupId);
+    } else if (flag == O_RDONLY) {
+        return checkRead(&node,userId,groupId);
+    } else if (flag == O_RDWR) {
+        if(checkRead(&node,userId,groupId) && checkWrite(&node,userId,groupId))
+            return 1;
+        return 0;
+    } else if (flag == O_EXCL) {
+        return checkExcl(&node,userId,groupId);
+    }
+    return 0;
 }
 
 void SBFS_init()
@@ -535,8 +572,7 @@ int SBFS_symlink(char* path,char* filename) {
     uint64_t new_inum = allocate_inode();
     read_inode(new_inum, &node);
     assert(node.link > 0);
-    node.permission_bits &= ~FILEMASK;
-    node.permission_bits |= (SYMBOLIC << 12) & FILEMASK;
+    setFiletype(&node,SYMBOLIC);
     char buf[400];
     strcpy(buf, path);
     node.direct_blocks[0] = allocate_data_block();
@@ -544,6 +580,7 @@ int SBFS_symlink(char* path,char* filename) {
         return 0;
     write_block(node.direct_blocks[0], 0, strlen(buf), buf);
     node.size = strlen(buf);
+    node.permission_bits |= ((GROUPMASK|OWNERMASK|WORLDMASK)&0x1FF);
     add_entry_to_dir(new_parent_inum, entry_name, new_inum);
     write_inode(new_inum, &node);
     return 1;
@@ -669,4 +706,7 @@ truncate(path, newsize)
 utime(path, ubuf)
 8. read symbolic link file
 readlink()
+9.flush()
+10.permission checking
+11.relevant 2 absolute path convert
 */

@@ -8,6 +8,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
+int checkRead(const inode* node, unsigned int userId,unsigned int groupId);
+int checkWrite(const inode* node, unsigned int userId,unsigned int groupId);
+int checkExcl(const inode* node, unsigned int userId,unsigned int groupId);
 int getMountPoint(char* buf,size_t size);
 uint64_t get_nanos(void);
 uint64_t read_symlink(uint64_t symlink_inum);

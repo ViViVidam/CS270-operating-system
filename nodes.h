@@ -22,6 +22,9 @@ enum {
     NORMAL, DIR, SYMBOLIC, BLOCKDEVICE, CHARDEVICE, SOCK, PIPE
 };// -,d,l,b,c,s,p
 
+#define ISFILE(a) (((a) & FILEMASK) >> 12 == NORMAL)
+#define ISSYM(a)  (((a) & FILEMASK) >> 12 == SYMBOLIC)
+#define ISDIR(a)  (((a) & FILEMASK) >> 12 == DIR)
 //assert
 typedef struct { 
 	//uint64_t blocks[13];

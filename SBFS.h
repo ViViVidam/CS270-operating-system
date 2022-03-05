@@ -6,10 +6,10 @@
 #include "SBFSHelper.h"
 #include <sys/stat.h>
 
-uint64_t SBFS_open(char *filename, int mode);
+uint64_t SBFS_open(char *filename, unsigned int userId,unsigned int groupId,unsigned int flag);
 int SBFS_close(int inum);
-uint64_t SBFS_mkdir(char *path);
-uint64_t SBFS_mknod(char *path);
+uint64_t SBFS_mkdir(char *path,unsigned int userId,unsigned int groupId);
+uint64_t SBFS_mknod(char *path,unsigned int userId,unsigned int groupId);
 int SBFS_readlink(char* path, char* buf, unsigned long size);
 int SBFS_utime(char* path,const struct timespec tv[2]);
 int SBFS_chown(char* path,uint16_t uid,uint16_t gid);

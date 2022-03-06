@@ -5,7 +5,6 @@
 #ifndef CS270_SBFSSTRUCT_H
 #define CS270_SBFSSTRUCT_H
 
-#include "nodes.h"
 
 #define MAX_FILENAME 64
 #define MAX_PATH 1024

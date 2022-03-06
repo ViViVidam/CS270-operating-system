@@ -2,8 +2,6 @@
 #define CS270_SBFS_H
 
 #include <stdint.h>
-#include "SBFSStruct.h"
-#include "SBFSHelper.h"
 #include <sys/stat.h>
 
 uint64_t SBFS_open(char *filename, unsigned int userId,unsigned int groupId,unsigned int flag);

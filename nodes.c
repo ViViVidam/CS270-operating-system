@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include "nodes.h"
 
+#include "disk.h"
+
 
 #define INODE_PER_BLOCK (BLOCKSIZE / sizeof(inode))
 

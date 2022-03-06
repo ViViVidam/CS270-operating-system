@@ -1,6 +1,6 @@
 #include "SBFSHelper.h"
+#include "SBFSStruct.h"
 #include <stdio.h>
-#include "SBFS.h"
 #include <string.h>
 #include <assert.h>
 #include <time.h>

@@ -1,6 +1,5 @@
 #ifndef CS270_NODE_H
 #define CS270_NODE_H
-#include "disk.h"
 #include <stdint.h>
 
 #define BLOCKADDR 8

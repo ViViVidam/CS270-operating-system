@@ -4,7 +4,7 @@
 #ifndef CS270_SBFSHELPER_H
 #define CS270_SBFSHELPER_H
 
-#include "SBFSStruct.h"
+
 #include <stdint.h>
 #include <stddef.h>
 

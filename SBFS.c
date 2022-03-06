@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <stdint.h>
 #include "SBFSHelper.h"
+#include "nodes.h"
+#include "SBFSStruct.h"
 #include <fcntl.h>
 
 #define MIN(a, b) ((a > b) ? b : a)

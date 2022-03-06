@@ -3,6 +3,7 @@
         "string.h": "c",
         "sbfs.h": "c",
         "stdio.h": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "nodes.h": "c"
     }
 }

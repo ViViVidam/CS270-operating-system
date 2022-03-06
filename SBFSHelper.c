@@ -129,6 +129,8 @@ int find_file_entry(uint64_t inum, char *entryname,dir* ety)
 {
     inode node;
     read_inode(inum, &node);
+    if(strlen(entryname)>MAX_FILENAME)
+        return -1;
     assert( (node.permission_bits & FILEMASK) >> 12 == DIR);
     int entry_count = node.size / sizeof(dir);
     dir entry;
@@ -155,6 +157,8 @@ int get_entryname(char* path,char* entryname){
         while(path[len-1] != '/'){
             len--;
         }
+        if(strlen(path+len)>MAX_FILENAME)
+            return 0;
         strcpy(entryname,path+len);
         return 1;
     }

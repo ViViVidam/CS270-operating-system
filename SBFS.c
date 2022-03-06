@@ -10,6 +10,7 @@
 #define MAX(a, b) ((a > b) ? a : b)
 
 int SBFS_getattr(char* path, struct stat* file_state){
+    printf("111111111\n");
     uint64_t inum = SBFS_namei(path);
     if(inum==0) {
         printf("inum not found %s\n",path);
@@ -85,10 +86,12 @@ uint64_t SBFS_namei(char *path) {
     inum = ROOT;
 
     while (*pointer != 0) {
-        while (*pointer != '/' && *pointer != 0) {
+        while (*pointer != '/' && *pointer != 0 && i<= MAX_FILENAME) {
             filename[i++] = *pointer;
             pointer += 1;
         }
+        if(*pointer != '/' && *pointer != 0)
+            return 0;
         filename[i] = 0;
         if(find_file_entry(inum, filename, &tmp)==-1)
             return 0;
@@ -227,6 +230,8 @@ uint64_t SBFS_mkdir(char *path,unsigned int userId,unsigned int groupId)
 		parent_path[len - 1] = 0;
 	char *filename = path + len;
 	printf("path %s filename %s\n", parent_path, filename);
+    if(strlen(filename) > MAX_FILENAME)
+        return 0;
 	uint64_t parent_path_inum = SBFS_namei(parent_path);
 	uint64_t child_inum;
 	if (parent_path_inum == 0)
@@ -254,6 +259,7 @@ uint64_t SBFS_mkdir(char *path,unsigned int userId,unsigned int groupId)
 			node.size = 0;
             node.last_access_time = node.last_modify_time = get_nanos();
 			write_inode(child_inum, &node);
+
 			add_entry_to_dir(parent_path_inum, filename, child_inum);
 		}
 	}
@@ -279,7 +285,8 @@ uint64_t SBFS_mknod(char *path,unsigned int userId,unsigned int groupId)
 	else
 		parent_path[len - 1] = 0;
 	char *filename = path + len;
-
+    if(strlen(filename) > MAX_FILENAME)
+        return 0;
 	uint64_t parent_path_inum = SBFS_namei(parent_path);
 	uint64_t child_inum;
 	if (parent_path_inum == 0)
@@ -489,7 +496,9 @@ int SBFS_rename(char* path,char* newname,unsigned int flags){
         return 0;
 
     get_entryname(path,old);
-    get_entryname(newname,new);
+    if(get_entryname(newname,new)==0)
+        return 0;
+
     int new_index = find_file_entry(inum_new_parent,new,&new_entry);
     int old_index = find_file_entry(inum_old_parent,old,&old_entry);
 
@@ -571,7 +580,8 @@ int SBFS_symlink(char* path,char* filename) {
     dir entry;
     char entry_name[MAX_FILENAME];
     printf("SBFS_symlink %s\n",path);
-    get_entryname(filename, entry_name);
+    if(get_entryname(filename, entry_name)==0)
+        return 0;
     uint64_t new_parent_inum = find_parent_dir_inum(filename);
     if (new_parent_inum == 0) {
         printf("parent path %s not found", filename);

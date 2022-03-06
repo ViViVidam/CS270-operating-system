@@ -135,6 +135,7 @@ uint64_t SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 {
 	char *buffer = (char *)buf;
 	inode node;
+    
 	read_inode(inum, &node);
     if(node.size<offset){
         strcpy(buf,"");
@@ -160,6 +161,9 @@ uint64_t SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 		buffer += read_bytes;
 		read_size -= read_bytes;
 	}
+
+    node.last_access_time = get_nanos();
+    write_inode(inum,&node);
 	return pre_size;
 }
 /* mode H_READ, don't create new block,mode H_CREATE create new block
@@ -191,7 +195,10 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	}
 
 	node.size = MAX(node.size, upperbound);
+    node.last_access_time = node.last_modify_time = get_nanos();
+
 	write_inode(inum, &node);
+    //TODO: why read again?
 	read_inode(inum, &node);
 	return size;
 }
@@ -245,6 +252,7 @@ uint64_t SBFS_mkdir(char *path,unsigned int userId,unsigned int groupId)
             node.group = groupId;
             node.permission_bits |= ((GROUPMASK|OWNERMASK|WORLDMASK)&0x1FD);
 			node.size = 0;
+            node.last_access_time = node.last_modify_time = get_nanos();
 			write_inode(child_inum, &node);
 			add_entry_to_dir(parent_path_inum, filename, child_inum);
 		}
@@ -296,6 +304,7 @@ uint64_t SBFS_mknod(char *path,unsigned int userId,unsigned int groupId)
             node.group = groupId;
             node.permission_bits |= ((GROUPMASK|OWNERMASK|WORLDMASK)&0x1b4);
             //rw_rw_r__
+            node.last_access_time = node.last_modify_time = get_nanos();
 			write_inode(child_inum, &node);
 			add_entry_to_dir(parent_path_inum, filename, child_inum);
 		}
@@ -338,6 +347,7 @@ int SBFS_rmdir(char *path) {
     if (node.link == 0) {
         free_inode(entry.inum);
     } else {
+        node.last_access_time = node.last_modify_time = get_nanos();
         write_inode(entry.inum, &node);
     }
     return 0;
@@ -372,6 +382,7 @@ int SBFS_unlink(char *path) {
         if (node.link == 0) {
             free_inode(entry.inum);
         } else {
+            node.last_access_time = node.last_modify_time = get_nanos();
             write_inode(entry.inum, &node);
         }
     }
@@ -531,6 +542,7 @@ int SBFS_truncate(char* path, uint64_t newsize){
         else{
             node.size = newsize;
             node.permission_bits = node.permission_bits & ( ~(0xffff & (USERBMASK | GROUPBMASK) ) );
+            node.last_access_time = node.last_modify_time = get_nanos();
             write_inode(inum,&node);
         }
     }
@@ -584,6 +596,7 @@ int SBFS_symlink(char* path,char* filename) {
     node.size = strlen(buf);
     node.permission_bits |= ((GROUPMASK|OWNERMASK|WORLDMASK)&0x1FF);
     add_entry_to_dir(new_parent_inum, entry_name, new_inum);
+    node.last_access_time = node.last_modify_time = get_nanos();
     write_inode(new_inum, &node);
     return 1;
 }
@@ -642,7 +655,7 @@ int SBFS_chmod(char* filename,uint16_t mode){
  * tv[0] last access time
  * tv[1] last modify time
  **/
-int SBFS_utime(char* path,const struct timespec tv[2]){
+int SBFS_utime(char* path, const struct timespec tv[2]){
     uint64_t inum = SBFS_namei(path);
     if (inum == 0)
         return 0;
@@ -663,6 +676,7 @@ int SBFS_chown(char* path,uint16_t uid,uint16_t gid) {
     node.owner = uid;
     node.group = gid;
     node.permission_bits = node.permission_bits & (~(0xffff & (USERBMASK | GROUPBMASK)));
+    node.last_access_time = node.last_modify_time = get_nanos();
     write_inode(inum, &node);
     return 1;
 }

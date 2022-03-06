@@ -51,6 +51,7 @@ void setFiletype(inode* node,int type){
     node->permission_bits = node->permission_bits & 0x8fff;
     type = type << 12;
     node->permission_bits = node->permission_bits | type;
+    node->last_access_time = node->last_modify_time = get_nanos();
 }
 
 char *SBFS_clean_path(char *path)

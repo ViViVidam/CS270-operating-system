@@ -570,7 +570,7 @@ void create_root_dir(unsigned int uid,unsigned int gid) {
 int SBFS_symlink(char* path,char* filename) {
     dir entry;
     char entry_name[MAX_FILENAME];
-    printf("SBFS_symlinl %s\n",path);
+    printf("SBFS_symlink %s\n",path);
     get_entryname(filename, entry_name);
     uint64_t new_parent_inum = find_parent_dir_inum(filename);
     if (new_parent_inum == 0) {

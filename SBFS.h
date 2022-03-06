@@ -27,5 +27,5 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf);
 void SBFS_init(unsigned int uid,unsigned int gid);
 int SBFS_getattr(char* filename,struct stat* file_state);
 uint64_t SBFS_opendir(const char* path,unsigned int userId,unsigned int groupId);
-char mountpoint[256];
+static char mountpoint[256];
 #endif

@@ -11,8 +11,10 @@
 
 int SBFS_getattr(char* path, struct stat* file_state){
     uint64_t inum = SBFS_namei(path);
-    if(inum==0)
+    if(inum==0) {
+        printf("inum not found %s\n",path);
         return 0;
+    }
     inode node;
     read_inode(inum,&node);
     file_state->st_gid = node.group;
@@ -29,13 +31,17 @@ int SBFS_getattr(char* path, struct stat* file_state){
     else if(ISFILE(node.permission_bits)){
         file_state->st_mode = S_IFREG;
     }
-    else
+    else {
+        printf("unrecongnizede file type %x\n",node.permission_bits);
         return 0;
-    uint16_t stick_user_group = (node.permission_bits & (USERBMASK|GROUPBMASK|STICKBIT)) << 4;
-    uint16_t user = (node.permission_bits&OWNERMASK)<<3;
-    uint16_t group = (node.permission_bits&GROUPMASK) << 2;
+    }
+    uint16_t stick_user_group = (node.permission_bits & (USERBMASK|GROUPBMASK|STICKBIT)) << 3;
+    uint16_t user = (node.permission_bits&OWNERMASK)<<2;
+    uint16_t group = (node.permission_bits&GROUPMASK) << 1;
     uint16_t world = (node.permission_bits&WORLDMASK);
-    file_state->st_mode |= (user|group|world);
+    //file_state->st_mode = file_state->st_mode|(stick_user_group|user|group|world);
+    file_state->st_mode |= (node.permission_bits&(USERBMASK|GROUPBMASK|STICKBIT|OWNERMASK|GROUPMASK|WORLDMASK));
+    printf("\n\n%x %x\n\n",file_state->st_mode,node.permission_bits);
     file_state->st_atim.tv_nsec = node.last_access_time % 1000000000L;
     file_state->st_atim.tv_sec = node.last_access_time / 1000000000L;
     file_state->st_mtim.tv_nsec = node.last_modify_time % 1000000000L;
@@ -130,7 +136,6 @@ uint64_t SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	char *buffer = (char *)buf;
 	inode node;
 	read_inode(inum, &node);
-    printf("inum %ld size %ld\n",inum,node.size);
     if(node.size<offset){
         strcpy(buf,"");
         return 0;
@@ -239,7 +244,6 @@ uint64_t SBFS_mkdir(char *path,unsigned int userId,unsigned int groupId)
             node.owner = userId;
             node.group = groupId;
             node.permission_bits |= ((GROUPMASK|OWNERMASK|WORLDMASK)&0x1FD);
-            //rwxrwxr_x
 			node.size = 0;
 			write_inode(child_inum, &node);
 			add_entry_to_dir(parent_path_inum, filename, child_inum);
@@ -267,7 +271,7 @@ uint64_t SBFS_mknod(char *path,unsigned int userId,unsigned int groupId)
 	else
 		parent_path[len - 1] = 0;
 	char *filename = path + len;
-	printf("path %s filename %s\n", parent_path, filename);
+
 	uint64_t parent_path_inum = SBFS_namei(parent_path);
 	uint64_t child_inum;
 	if (parent_path_inum == 0)
@@ -356,8 +360,6 @@ int SBFS_unlink(char *path) {
         printf("\nlocate failed for path: %s\n", path);
         return -1;
     }
-
-    printf("unlink %ld\n", entry.inum);
     read_inode(entry.inum, &node);
 
     if ((node.permission_bits & FILEMASK) >> 12 != NORMAL && (node.permission_bits & FILEMASK) >> 12 != SYMBOLIC) {
@@ -385,24 +387,27 @@ uint64_t SBFS_open(char *filename, unsigned int userId,unsigned int groupId,unsi
     uint64_t inum = SBFS_namei(filename);
     inode node;
     read_inode(inum, &node);
-    if (flag == O_WRONLY) {
-        return checkWrite(&node,userId,groupId);
-    } else if (flag == O_RDONLY) {
-        return checkRead(&node,userId,groupId);
-    } else if (flag == O_RDWR) {
-        if(checkRead(&node,userId,groupId) && checkWrite(&node,userId,groupId))
-            return 1;
+    uint16_t access_mode = flag & O_ACCMODE;
+    if (access_mode == O_WRONLY) {
+        if(checkWrite(&node,userId,groupId))
+            return inum;
         return 0;
-    } else if (flag == O_EXCL) {
-        return checkExcl(&node,userId,groupId);
+    } else if (access_mode == O_RDONLY) {
+        if(checkRead(&node,userId,groupId))
+            return inum;
+        return 0;
+    } else if (access_mode == O_RDWR) {
+        if(checkRead(&node,userId,groupId) && checkWrite(&node,userId,groupId))
+            return inum;
+        return 0;
     }
+    printf("unrecognized flag %d %x\n",flag,flag);
     return 0;
 }
 
-void SBFS_init()
-{
+void SBFS_init(unsigned int uid,unsigned int gid){
 	mkfs();
-	create_root_dir();
+	create_root_dir(uid,gid);
     int res = getMountPoint(mountpoint,256);
     assert(res!=0);
     printf("mountpoint %s\n",mountpoint);
@@ -431,6 +436,7 @@ dir *SBFS_readdir(uint64_t inum,int init)
             assert( (node.permission_bits & FILEMASK) >> 12 == DIR);
             item_count = node.size / sizeof(dir);
         }
+        printf("inode size in dir %d %d\n",node.size,present_inum);
         assert((node.size % sizeof(dir)) == 0);
         while (1) {
             if (i >= item_count)
@@ -531,12 +537,17 @@ int SBFS_truncate(char* path, uint64_t newsize){
     return 1;
 }
 
-void create_root_dir() {
+void create_root_dir(unsigned int uid,unsigned int gid) {
     inode root_node;
     uint64_t root = allocate_inode();
     assert(root == ROOT);
     read_inode(root, &root_node);
     setFiletype(&root_node, DIR);
+    root_node.owner = uid;
+    root_node.group = gid;
+    root_node.permission_bits |= ((GROUPMASK|OWNERMASK|WORLDMASK)&0x1FD);
+    //rwxrwxr_x
+    root_node.size = 0;
     write_inode(root, &root_node);
 }
 
@@ -547,15 +558,6 @@ void create_root_dir() {
 int SBFS_symlink(char* path,char* filename) {
     dir entry;
     char entry_name[MAX_FILENAME];
-    // convert needs to be made for symlink
-    /*
-       path[0]='/';
-      uint64_t inum = SBFS_namei(path);
-
-       if(inum==0){
-           printf("path %s not found\n",path);
-           return 0;
-       }*/
     printf("SBFS_symlinl %s\n",path);
     get_entryname(filename, entry_name);
     uint64_t new_parent_inum = find_parent_dir_inum(filename);
@@ -611,21 +613,27 @@ int SBFS_link(char* path, char* newpath) {
 }
 
 int SBFS_chmod(char* filename,uint16_t mode){
+
     uint64_t inum = SBFS_namei(filename);
     inode node;
     if(inum==0)
         return 0;
     read_inode(inum,&node);
-    node.permission_bits &= ~(WORLDMASK|OWNERMASK|GROUPMASK);
-    int i = 0;
-    uint16_t new_permit = 0;
-    while(mode!=0){
-        uint16_t permit_tmp = mode % 10;
-        mode = mode / 10;
-        new_permit |= permit_tmp << (i*3);
-        i += 1;
+    node.permission_bits = 0;
+
+    if(S_ISLNK(mode))
+        setFiletype(&node,SYMBOLIC);
+    else if(S_ISREG(mode))
+        setFiletype(&node,NORMAL);
+    else if(S_ISDIR(mode))
+        setFiletype(&node,DIR);
+    else {
+        printf("unsupported file type %x",mode);
+        return 0;
     }
-    node.permission_bits |= new_permit;
+    mode &= (USERBMASK|GROUPBMASK|STICKBIT|WORLDMASK|OWNERMASK|GROUPMASK);
+    node.permission_bits |= mode;
+    node.permission_bits |= 0x8000;
     node.last_access_time = node.last_modify_time = get_nanos();
     write_inode(inum,&node);
     return 1;
@@ -657,6 +665,20 @@ int SBFS_chown(char* path,uint16_t uid,uint16_t gid) {
     node.permission_bits = node.permission_bits & (~(0xffff & (USERBMASK | GROUPBMASK)));
     write_inode(inum, &node);
     return 1;
+}
+
+uint64_t SBFS_opendir(const char* path,unsigned int userId,unsigned int groupId){
+    uint64_t inum = SBFS_namei(path);
+    if (inum == 0)
+    {
+        printf("open dir failed.\n");
+        return 0;
+    }
+    inode node;
+    read_inode(inum,&node);
+    if(checkRead(&node,userId,groupId))
+        return inum;
+    return 0;
 }
 /*
 int main()

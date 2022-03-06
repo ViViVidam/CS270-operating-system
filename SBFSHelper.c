@@ -305,6 +305,7 @@ int checkExcl(const inode* node, unsigned int userId,unsigned int groupId){
 }
 
 int checkWrite(const inode* node, unsigned int userId,unsigned int groupId){
+
     if (userId == node->owner) {
         if (((node->permission_bits & OWNERMASK) >> 7 & 0x1)) {
             return 1;

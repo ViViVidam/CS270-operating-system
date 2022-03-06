@@ -18,7 +18,7 @@ static void *sb_init(struct fuse_conn_info *conn,
 	(void)conn;
 	(void)cfg;
 
-	SBFS_init();
+	SBFS_init(fuse_get_context()->uid,fuse_get_context()->gid);
 
 	return NULL;
 }
@@ -30,7 +30,7 @@ static int sb_getattr(const char *path, struct stat *stbuf,
 	memset(stbuf, 0, sizeof(struct stat));
     int res = SBFS_getattr(path,stbuf);
     if(res==0)
-        return 1;
+        return -ENOENT;
 	return 0;
 }
 
@@ -47,7 +47,7 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	uint64_t inum = fi->fh;
 	inode node;
 	read_inode(inum, &node);
-	printf("npde size %ld %ld\n", inum, node.size);
+	printf("node size %ld %ld\n", inum, node.size);
 	if ((node.permission_bits & FILEMASK) >> 12 != DIR)
 	{
 		printf("read dir failed.\n");
@@ -85,28 +85,12 @@ static int sb_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 static int sb_opendir(const char *path, struct fuse_file_info *fi)
 {
 	printf("\nsb_opendir(path=\"%s\", fi=0x%08x)\n", path, fi);
-	uint64_t inum = SBFS_namei(path);
-
-	// wrong inum
-	if (inum == 0)
-	{
-		printf("open dir failed.\n");
-		return -1;
-	}
+    uint64_t inum = SBFS_opendir(path,fuse_get_context()->uid,fuse_get_context()->gid);
+    if (inum==0)
+        return -ENOENT;
 	printf("set fi->fh = inum: %ld\n", inum);
 	fi->fh = inum;
-	// inode node;
-	// read_inode(inum, &node);
-
-	// if (node.type != DIRECTORY)
-	// {
-	// 	printf("open dir failed.\n");
-	// 	return -1;
-	// }
-	// else
-	// {
 	return 0;
-	// }
 }
 
 static int sb_releasedir(const char *path, struct fuse_file_info *fi)
@@ -148,9 +132,8 @@ static int sb_mkdir(const char *path, mode_t mode)
 	return 0;
 }
 
-static int sb_open(const char *path, struct fuse_file_info *fi)
-{
-	printf("\nsb_open(path\"%s\", fi=0x%08x)\n", path, fi);
+static int sb_open(const char *path, struct fuse_file_info *fi) {
+	printf("\nsb_open(path\"%s\", fi flag=0x%08x)\n", path, fi->flags);
 	uint64_t inum = SBFS_open(path,fuse_get_context()->uid,fuse_get_context()->gid,fi->flags);
 	if (inum == 0)
 	{

@@ -347,10 +347,10 @@ int SBFS_rmdir(char *path) {
         printf("\npath: %s is not a directory.\n", path);
         return -1;
     }
-
+    dir tmp;
     for (int k = 0; k < (node.size / sizeof(entry)); k++) {
-        SBFS_readdir_raw(entry.inum, k, &entry);
-        if (entry.inum != 0) {
+        SBFS_readdir_raw(entry.inum, k, &tmp);
+        if (tmp.inum != 0) {
             printf("\npath: %s is not an empty directory.\n", path);
             return -1;
         }

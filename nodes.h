@@ -17,7 +17,7 @@
 #define OWNERMASK 0x01c0
 #define GROUPMASK 0x38
 #define WORLDMASK 0x7
-
+#define CACHESIZE 16
 enum {
     NORMAL, DIR, SYMBOLIC, BLOCKDEVICE, CHARDEVICE, SOCK, PIPE
 };// -,d,l,b,c,s,p

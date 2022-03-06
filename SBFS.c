@@ -333,7 +333,8 @@ int SBFS_rmdir(char *path) {
         printf("\nlocate failed for path: %s\n", path);
         return -1;
     }
-    get_entryname(path, entry_name);
+    if(get_entryname(path, entry_name)==0)
+        return -1;
     int index = find_file_entry(parent_dir_inum, entry_name, &entry);
     if (index == -1) {
         printf("\nlocate failed for path: %s\n", path);
@@ -342,11 +343,18 @@ int SBFS_rmdir(char *path) {
     printf("rmdir %s: inum %ld\n", path, entry.inum);
 
     read_inode(entry.inum, &node);
-    if ((node.permission_bits & FILEMASK) >> 12 != DIR || node.size != 0) {
-        printf("\npath: %s is not an empty directory.\n", path);
+    if ((node.permission_bits & FILEMASK) >> 12 != DIR) {
+        printf("\npath: %s is not a directory.\n", path);
         return -1;
     }
 
+    for (int k = 0; k < (node.size / sizeof(entry)); k++) {
+        SBFS_readdir_raw(entry.inum, k, &entry);
+        if (entry.inum != 0) {
+            printf("\npath: %s is not an empty directory.\n", path);
+            return -1;
+        }
+    }
 
     printf("rmdir %ld: inum %ld\n", parent_dir_inum, entry.inum);
     delete_entry_from_dir(parent_dir_inum, index);

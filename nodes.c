@@ -12,6 +12,9 @@ static uint64_t head = 0;
 static uint64_t i_list_block_count = 0;
 /* the entire inode is loaded into memory, mapping from inum to index is inum - 1 = index*/
 static inode* in_mem_ilist;
+static uint8_t cache[CACHESIZE][BLOCKSIZE];
+
+int readCache(char* buf);
 
 uint64_t read_head(){
     return head;

@@ -134,7 +134,7 @@ uint64_t SBFS_namei(char *path) {
     return 1; // the path end with /
 }
 
-uint64_t SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
+int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 {
 	char *buffer = (char *)buf;
 	inode node;
@@ -144,25 +144,29 @@ uint64_t SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
         strcpy(buf,"");
         return 0;
     }
-	uint64_t read_size, pre_size;
+	int read_size, pre_size;
     read_size = pre_size = MIN(size,node.size-offset);
 
-	int start = block_id_helper(&node, offset / BLOCKSIZE, H_READ);
+    //printf("read block inum %ld offset %ld size %ld\n",inum,offset,size);
+    int block_index = offset / BLOCKSIZE;
+	uint64_t read_block_id = block_id_helper(&node, block_index, H_READ);
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
 
-	int read_bytes = read_block(start, block_offset, read_size, buf);
+	int read_bytes = read_block(read_block_id, block_offset, read_size, buf);
 	read_size -= read_bytes;
 	buffer += read_bytes;
+    //printf("read bytes %d size %ld\n",read_bytes,read_size);
 
 	while (read_size > 0)
 	{
-		start += 1;
-		int block_id = block_id_helper(&node, start, H_CREATE);
+		block_index += 1;
+		uint64_t block_id = block_id_helper(&node, block_index, H_READ);
 		assert(block_id != 0);
 		read_bytes = read_block(block_id, block_offset, size, buf);
 		buffer += read_bytes;
 		read_size -= read_bytes;
+        //printf("read bytes %d size %ld\n",read_bytes,read_size);
 	}
 
     node.last_access_time = get_nanos();
@@ -180,19 +184,21 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 
 	char *buffer = (char *)buf;
 	uint64_t upperbound = size + offset;
-	int start = block_id_helper(&node, offset / BLOCKSIZE, H_CREATE);
+    int block_index = offset / BLOCKSIZE;
+	int write_block_id = block_id_helper(&node, offset / BLOCKSIZE, H_CREATE);
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
 
-	int write_bytes = write_block(start, block_offset, size, buf);
+	int write_bytes = write_block(write_block_id, block_offset, size, buf);
 	size -= write_bytes;
 	buffer += write_bytes;
-
+    //printf("write bytes %d size %ld\n",write_bytes,size);
 	while (size > 0)
 	{
-		start += 1;
-		int block_id = block_id_helper(&node, start, H_CREATE);
-		write_bytes = write_block(block_id, block_offset, size, buf);
+		block_index += 1;
+        //printf("start %d\n",block_index);
+		write_block_id = block_id_helper(&node, block_index, H_CREATE);
+		write_bytes = write_block(write_block_id, block_offset, size, buf);
 		buffer += write_bytes;
 		size -= write_bytes;
 	}
@@ -201,8 +207,6 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
     node.last_access_time = node.last_modify_time = get_nanos();
 
 	write_inode(inum, &node);
-    //TODO: why read again?
-	read_inode(inum, &node);
 	return size;
 }
 

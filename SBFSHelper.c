@@ -175,17 +175,20 @@ int write_entry(uint64_t dir_inum, int index, dir* entry){
 
 uint64_t block_id_helper(inode *node, int index, int mode)
 {
+    //printf("block id helper called\n");
     char tmp[BLOCKSIZE];
     char zero[BLOCKSIZE];
     memset(zero, 0, BLOCKSIZE);
     uint64_t *address = (uint64_t *)tmp;
-    int flag = 0; // indicate is there a change in inode
     if (index < DIRECT_BLOCK)
     {
+        //printf("allocated node->direct_blocks[%d] %ld\n",index,node->direct_blocks[index]);
         if (node->direct_blocks[index] == 0 && mode == H_CREATE)
         {
             node->direct_blocks[index] = allocate_data_block();
+            //printf("allocated node->direct_blocks[%d] %ld\n",index,node->direct_blocks[index]);
         }
+        //printf("return node->direct_blocks[%d] %ld\n",index,node->direct_blocks[index]);
         return node->direct_blocks[index];
     }
     else if (index < (DIRECT_BLOCK + SING_INDIR * 512))

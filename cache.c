@@ -3,16 +3,22 @@
 //
 #include "disk.h"
 #include "cache.h"
-
+#include <string.h>
 #define INDEXMASK 0xF;
-static uint8_t cache[CACHESIZE][2][BLOCKSIZE];
-static uint8_t flag[CACHESIZE][2];
-static uint64_t group[CACHESIZE][2];
-int readCache(const char* buf,unsigned long blockId){
+static uint8_t cache[CACHESIZE][GROUPSIZE][BLOCKSIZE];
+static uint8_t flag[CACHESIZE][GROUPSIZE];
+static uint8_t dirty[CACHESIZE][GROUPSIZE];
+static uint64_t group[CACHESIZE][GROUPSIZE];
+int readCache(const char* buf,unsigned long blockId) {
     uint8_t index = blockId & 0xf;
     uint64_t identity = blockId & ~(0xf);
-    for()
-    if(flag[index][0] == 1 && identity)
+    for (int i = 0; i < GROUPSIZE; i++) {
+        if(flag[index][i]==1 & group[index][i] == identity){
+            memcpy()
+        }
+
+    }
+    if (flag[index][0] == 1 && identity)
 }
 int writeCache(const char* buf,unsigned long blockId){
 

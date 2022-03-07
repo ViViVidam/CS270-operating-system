@@ -22,7 +22,7 @@ int SBFS_rmdir(char *path);
 int SBFS_unlink(char *path);
 dir *SBFS_readdir(uint64_t inum,int init);
 uint64_t SBFS_namei(char *path);
-uint64_t SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf);
+int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf);
 int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf);
 void SBFS_init(unsigned int uid,unsigned int gid);
 int SBFS_getattr(char* filename,struct stat* file_state);

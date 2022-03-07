@@ -135,6 +135,7 @@ void mkfs()
 	char tmp[BLOCKSIZE];
     read_disk(0,tmp);
     uint64_t *supernode = (uint64_t *)tmp;
+    set_vol("/dev/vdc");
     if(supernode[3] != 1) {
         memset(tmp, 0, sizeof(tmp));
         init_i_list();

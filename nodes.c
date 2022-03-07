@@ -132,9 +132,11 @@ void init_i_list()
 
 void mkfs()
 {
+    printf("111111\n");
 	char tmp[BLOCKSIZE];
     read_disk(0,tmp);
     uint64_t *supernode = (uint64_t *)tmp;
+    printf("set volume /dev/vdc\n");
     set_vol("/dev/vdc");
     if(supernode[3] != 1) {
         memset(tmp, 0, sizeof(tmp));

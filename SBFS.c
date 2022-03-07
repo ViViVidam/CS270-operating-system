@@ -65,11 +65,11 @@ int SBFS_readlink(char* path, char* buf, unsigned long size) {
         return -1;
     }
     if(size < node.size) {
-        read_block(node.direct_blocks[0], 0, size, buf);
+        read_block_cache(node.direct_blocks[0], 0, size, buf);
         buf[size-1] = 0;
     }
     else
-        read_block(node.direct_blocks[0], 0, node.size, buf);
+        read_block_cache(node.direct_blocks[0], 0, node.size, buf);
     return 0;
 }
 
@@ -153,7 +153,7 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
 
-	int read_bytes = read_block(read_block_id, block_offset, read_size, buf);
+	int read_bytes = read_block_cache(read_block_id, block_offset, read_size, buf);
 	read_size -= read_bytes;
 	buffer += read_bytes;
     //printf("read bytes %d size %ld\n",read_bytes,read_size);
@@ -163,7 +163,7 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 		block_index += 1;
 		uint64_t block_id = block_id_helper(&node, block_index, H_READ);
 		assert(block_id != 0);
-		read_bytes = read_block(block_id, block_offset, size, buf);
+		read_bytes = read_block_cache(block_id, block_offset, size, buf);
 		buffer += read_bytes;
 		read_size -= read_bytes;
         //printf("read bytes %d size %ld\n",read_bytes,read_size);
@@ -189,7 +189,7 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
 
-	int write_bytes = write_block(write_block_id, block_offset, size, buf);
+	int write_bytes = write_block_cache(write_block_id, block_offset, size, buf);
 	size -= write_bytes;
 	buffer += write_bytes;
     //printf("write bytes %d size %ld\n",write_bytes,size);
@@ -198,7 +198,7 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 		block_index += 1;
         //printf("start %d\n",block_index);
 		write_block_id = block_id_helper(&node, block_index, H_CREATE);
-		write_bytes = write_block(write_block_id, block_offset, size, buf);
+		write_bytes = write_block_cache(write_block_id, block_offset, size, buf);
 		buffer += write_bytes;
 		size -= write_bytes;
 	}
@@ -617,7 +617,7 @@ int SBFS_symlink(char* path,char* filename) {
     node.direct_blocks[0] = allocate_data_block();
     if (node.direct_blocks[0] == 0)
         return 0;
-    write_block(node.direct_blocks[0], 0, strlen(buf), buf);
+    write_block_cache(node.direct_blocks[0], 0, strlen(buf), buf);
     node.size = strlen(buf);
     node.permission_bits |= ((GROUPMASK|OWNERMASK|WORLDMASK)&0x1FF);
     add_entry_to_dir(new_parent_inum, entry_name, new_inum);

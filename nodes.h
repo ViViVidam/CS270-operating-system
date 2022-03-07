@@ -17,6 +17,8 @@
 #define OWNERMASK 0x01c0
 #define GROUPMASK 0x38
 #define WORLDMASK 0x7
+#define CACHESIZE 16 //changing the cachesize must also change the mask
+#define GROUPSIZE 2
 
 enum {
     NORMAL, DIR, SYMBOLIC, BLOCKDEVICE, CHARDEVICE, SOCK, PIPE
@@ -45,7 +47,8 @@ typedef struct {
 
 int write_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);
 int read_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);
-
+int write_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer);
+int read_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer);
 
 void read_inode(uint64_t inum,inode* node);
 void write_inode(uint64_t inum,inode* node);

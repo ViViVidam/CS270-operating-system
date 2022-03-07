@@ -4,10 +4,14 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "nodes.h"
-
-
+#define INDEXMASK 0xF;
 #define INODE_PER_BLOCK (BLOCKSIZE / sizeof(inode))
 
+static uint8_t cache[CACHESIZE][GROUPSIZE][BLOCKSIZE];
+static uint8_t flag[CACHESIZE][GROUPSIZE];
+static uint8_t dirty[CACHESIZE][GROUPSIZE];
+static uint64_t identities[CACHESIZE][GROUPSIZE];
+static uint8_t timestamp[CACHESIZE][GROUPSIZE];
 static uint64_t head = 0;
 static uint64_t i_list_block_count = 0;
 /* the entire inode is loaded into memory, mapping from inum to index is inum - 1 = index*/
@@ -344,5 +348,97 @@ int write_block(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer)
 	return fmin(size, BLOCKSIZE - offset);
 }
 
+void cache_update_timestamp(int index) {
+	for (int i = 0; i < GROUPSIZE; i++) {
+		if (flag[index][i] == 1)
+			timestamp[index][i] += 1;
+	}
+}
+/**
+ * read block return the size of read in actual
+ * **/
+int read_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer) {
+	assert(offset<=BLOCKSIZE);
+	int read_size = 0;
+	if(size<(BLOCKSIZE-offset))
+		read_size = size;
+	else
+		read_size = BLOCKSIZE - offset;
+	uint8_t index = block_id & 0xf;
+	uint64_t identity = block_id;
+	cache_update_timestamp(index);
+	for (int i = 0; i < GROUPSIZE; i++) {
+		if (flag[index][i] == 1 & identities[index][i] == identity) {
+			memcpy(buffer, cache[index][i] + offset, read_size);
+			timestamp[index][i] = 0;
+			return read_size;
+		}
+	}
+	int kick_index = 0;
+	for (int i = 0; i < GROUPSIZE; i++) {
+		if(flag[index][i]==0) {
+			kick_index = i;
+			break;
+		}
+		else if(timestamp[index][kick_index] <= timestamp[index][i])
+			kick_index = i;
+	}
+
+	if(dirty[index][kick_index]==1) {
+		write_disk(identities[index][kick_index], cache[index][kick_index]);
+		dirty[index][kick_index] = 0;
+	}
+	flag[index][kick_index] = 1;
+	identities[index][kick_index] = block_id;
+	timestamp[index][kick_index] = 0;
+	read_disk(block_id,cache[index][kick_index]);
+	memcpy(buffer,cache[index][kick_index]+offset,read_size);
+	return read_size;
+}
+
+int write_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer)
+{
+	assert(offset<BLOCKSIZE);
+	int index = block_id & INDEXMASK;
+	uint64_t identity = block_id;
+	int write_size = 0;
+	if(size<(BLOCKSIZE-offset))
+		write_size = size;
+	else
+		write_size = BLOCKSIZE - offset;
+
+	cache_update_timestamp(index);
+
+	for(int i = 0;i<GROUPSIZE;i++){
+		if(flag[index][i] == 1 && identities[index][i] == identity){
+			memcpy(cache[index][i]+offset,buffer,write_size);
+			timestamp[index][i] = 0;
+			dirty[index][i] = 1;
+			return write_size;
+		}
+	}
+
+	int kick_index = 0;
+	for (int i = 0; i < GROUPSIZE; i++) {
+		if(flag[index][i]==0) {
+			kick_index = i;
+			break;
+		}
+		else if(timestamp[index][kick_index] <= timestamp[index][i])
+			kick_index = i;
+	}
+
+	if(dirty[index][kick_index]==1)
+		write_disk(identities[index][kick_index], cache[index][kick_index]);
+
+	flag[index][kick_index] = 1;
+	dirty[index][kick_index] = 1;
+	identities[index][kick_index] = block_id;
+	timestamp[index][kick_index] = 0;
+	read_disk(block_id,cache[index][kick_index]);
+	memcpy(cache[index][kick_index]+offset,buffer,write_size);
+
+	return write_size;
+}
 
 /* size is for computation convinent */

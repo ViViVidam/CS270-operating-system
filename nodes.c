@@ -79,12 +79,6 @@ void init_free_disk(int start)
 		datablock[0] = start;
 		write_disk(block_id, datablock);
         read_disk(block_id,test);
-        uint64_t * test_block = (uint64_t*) test;
-        //printf("block id %d:\n",block_id);
-        /*for(int j = 0;j<(BLOCKSIZE/BLOCKADDR);j++){
-            printf("%ld ",test_block[j]);
-        }
-        printf("\n");*/
 	}
 
 	if ((BLOCKCOUNT - i_list_block_count - 1) % block_entries_per_block != 0)
@@ -139,24 +133,35 @@ void init_i_list()
 void mkfs()
 {
 	char tmp[BLOCKSIZE];
+    read_disk(0,tmp);
+    uint64_t *supernode = (uint64_t *)tmp;
+    if(supernode[3] != 1) {
+        memset(tmp, 0, sizeof(tmp));
+        init_i_list();
+        //int start = INODES / INODE_PER_BLOCK + 1;
+        int start = i_list_block_count + 1;
+        //start of block
+        supernode[0] = start;
+        supernode[1] = i_list_block_count; //inode block count
+        supernode[2] = BLOCKCOUNT;
+        supernode[3] = 1; //init flag
+        write_disk(0, tmp);
 
-	memset(tmp, 0, sizeof(tmp));
-
-	init_i_list();
-
-	uint64_t *supernode = (uint64_t *)tmp;
-
-	//int start = INODES / INODE_PER_BLOCK + 1;
-	int start = i_list_block_count + 1;
-	//start of block
-	supernode[0] = start;
-	supernode[1] = i_list_block_count; //inode block count
-	supernode[2] = BLOCKSIZE;
-	supernode[3] = 1; //init flag
-	write_disk(0, tmp);
-
-	printf("data block starts from block %d\n", start);
-	init_free_disk(start);
+        printf("data block starts from block %d\n", start);
+        init_free_disk(start);
+    }
+    else{
+        i_list_block_count = supernode[1];
+        head = supernode[0];
+        in_mem_ilist = (inode*)malloc(INODE_PER_BLOCK*i_list_block_count*sizeof(inode));
+        inode* nodes = (inode*)tmp;
+        for(int i = 1; i<= i_list_block_count;i+=1){
+            read_disk(i,tmp);
+            for(int j=0;j<INODE_PER_BLOCK;j++){
+                memcpy(in_mem_ilist+(i-1)*INODE_PER_BLOCK+j,nodes+j,sizeof(inode));
+            }
+        }
+    }
     //printf("header %ld\n",head);
 }
 

@@ -32,7 +32,8 @@ uint64_t find_parent_dir_inum(char *path)
 {
     char parent_path[MAX_PATH];
     int len = strlen(path);
-    int i = 0;
+    if(len>MAX_PATH)
+        return 0;
     while (*(path + len - 1) != '/'){
         len--;
     }

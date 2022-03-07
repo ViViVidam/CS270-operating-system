@@ -6,6 +6,7 @@
 #define CS270_CACHE_H
 
 #define CACHESIZE 16 //changing the cachesize must also change the mask
-int readCache(char* buf,unsigned long blockId);
-int writeCache(char* buf,unsigned long blockId);
+#define GROUPSIZE 2
+int readCache(const char* buf,unsigned long blockId);
+int writeCache(const char* buf,unsigned long blockId);
 #endif //CS270_CACHE_H

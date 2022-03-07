@@ -212,13 +212,14 @@ return 0: can not mkdir
 */
 uint64_t SBFS_mkdir(char *path,unsigned int userId,unsigned int groupId)
 {
-	char parent_path[5 * MAX_FILENAME];
+	char parent_path[MAX_PATH];
 	if (SBFS_namei(path) != 0)
 	{
 		return 0;
 	}
 	int len = strlen(path);
-	int i = 0;
+	if(len>MAX_PATH)
+        return 0;
 	while (*(path + len - 1) != '/')
 	{
 		len--;
@@ -268,13 +269,14 @@ uint64_t SBFS_mkdir(char *path,unsigned int userId,unsigned int groupId)
 
 uint64_t SBFS_mknod(char *path,unsigned int userId,unsigned int groupId)
 {
-	char parent_path[5 * MAX_FILENAME];
+	char parent_path[MAX_PATH];
 	if (SBFS_namei(path) != 0)
 	{
 		return 0;
 	}
 	int len = strlen(path);
-	int i = 0;
+	if(len>MAX_PATH)
+        return 0;
 	while (*(path + len - 1) != '/')
 	{
 		len--;
@@ -360,6 +362,7 @@ int SBFS_rmdir(char *path) {
     delete_entry_from_dir(parent_dir_inum, index);
     node.link -= 1;
     if (node.link == 0) {
+        printf("free inode\n");
         free_inode(entry.inum);
     } else {
         node.last_access_time = node.last_modify_time = get_nanos();

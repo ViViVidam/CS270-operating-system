@@ -133,10 +133,10 @@ void init_i_list()
 void mkfs()
 {
 	char tmp[BLOCKSIZE];
-    read_disk(0,tmp);
     uint64_t *supernode = (uint64_t *)tmp;
     printf("set volume /dev/vdc\n");
     set_vol("/dev/vdc");
+    read_disk(0,tmp);
     if(supernode[3] != 1) {
         printf("no system mounted\nmounting fs...\n");
         memset(tmp, 0, sizeof(tmp));

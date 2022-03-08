@@ -455,4 +455,14 @@ int write_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *b
 	return write_size;
 }
 
+void cache_flush_all(){
+    for(int i=0;i<CACHESIZE;i++){
+        for(int j=0;j<GROUPSIZE;j++){
+            if(flag[i][j]==1 && dirty[i][j]==1) {
+                write_disk(identities[i][j], cache[i][j]);
+                dirty[i][j] = 0;
+            }
+        }
+    }
+}
 /* size is for computation convinent */

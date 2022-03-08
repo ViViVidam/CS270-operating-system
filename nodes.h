@@ -59,6 +59,8 @@ int free_data_block(uint64_t id);
 uint64_t allocate_data_block();
 int mkfs();
 
+void cache_flush_all();
+
 uint64_t read_head();//debuging purpose
 
 #endif

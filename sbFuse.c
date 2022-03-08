@@ -253,6 +253,10 @@ static int sb_truncate(const char * path, off_t newsize, struct fuse_file_info *
 	return ret > 0 ? 0 : -1;
 }
 
+void sb_destroy (void *private_data){
+    SBFS_flush_all();
+}
+
 static const struct fuse_operations sb_oper = {
 	.init = sb_init,
 	.readlink = sb_readlink,
@@ -275,7 +279,8 @@ static const struct fuse_operations sb_oper = {
 	.chmod = sb_chmod,
 	.chown = sb_chown,
 	.truncate = sb_truncate,
-    .readlink = sb_readlink
+    .readlink = sb_readlink,
+    .destroy = sb_destroy
 };
 
 int main(int argc, char *argv[])

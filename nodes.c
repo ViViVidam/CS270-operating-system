@@ -132,13 +132,13 @@ void init_i_list()
 
 void mkfs()
 {
-    printf("111111\n");
 	char tmp[BLOCKSIZE];
     read_disk(0,tmp);
     uint64_t *supernode = (uint64_t *)tmp;
     printf("set volume /dev/vdc\n");
     set_vol("/dev/vdc");
     if(supernode[3] != 1) {
+        printf("no system mounted\nmounting fs...\n");
         memset(tmp, 0, sizeof(tmp));
         init_i_list();
         //int start = INODES / INODE_PER_BLOCK + 1;
@@ -154,6 +154,7 @@ void mkfs()
         init_free_disk(start);
     }
     else{
+        printf("already has mounted system\n");
         i_list_block_count = supernode[1];
         head = supernode[0];
         in_mem_ilist = (inode*)malloc(INODE_PER_BLOCK*i_list_block_count*sizeof(inode));

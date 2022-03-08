@@ -351,7 +351,6 @@ int getMountPoint(char* buf,size_t size) {
     if(fp==NULL)
         return 0;
     while (fgets(line, 128, fp)) {
-        printf("%s\n",line);
         if (line[0] == 'm' && line[1] == 'a' && line[2] == 'i' && line[3] == 'n' && line[4] == ' ') {
             int i = 5;
             while (line[i] != ' ' && (i - 5) < size && line[i] != 0) {

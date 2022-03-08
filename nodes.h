@@ -57,7 +57,7 @@ uint64_t allocate_inode();
 
 int free_data_block(uint64_t id);
 uint64_t allocate_data_block();
-void mkfs();
+int mkfs();
 
 uint64_t read_head();//debuging purpose
 

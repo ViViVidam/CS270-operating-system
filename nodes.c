@@ -129,8 +129,12 @@ void init_i_list()
     in_mem_ilist = (inode*)malloc(INODE_PER_BLOCK*i_list_block_count*sizeof(inode));
     memset(in_mem_ilist,0,INODE_PER_BLOCK*i_list_block_count*sizeof(inode));
 }
-
-void mkfs()
+/**
+ * return val :
+ * 0 means it is not initialized yet
+ * 1 means it has already mounted once
+ * **/
+int mkfs()
 {
 	char tmp[BLOCKSIZE];
     uint64_t *supernode = (uint64_t *)tmp;
@@ -152,6 +156,7 @@ void mkfs()
 
         printf("data block starts from block %d\n", start);
         init_free_disk(start);
+        return 0;
     }
     else{
         printf("already has mounted system\n");
@@ -165,8 +170,8 @@ void mkfs()
                 memcpy(in_mem_ilist+(i-1)*INODE_PER_BLOCK+j,nodes+j,sizeof(inode));
             }
         }
+        return 1;
     }
-    //printf("header %ld\n",head);
 }
 
 /*

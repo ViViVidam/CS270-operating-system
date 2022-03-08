@@ -439,8 +439,8 @@ uint64_t SBFS_open(char *filename, unsigned int userId,unsigned int groupId,unsi
 }
 
 void SBFS_init(unsigned int uid,unsigned int gid){
-	mkfs();
-	create_root_dir(uid,gid);
+    if(mkfs()==0)
+	    create_root_dir(uid,gid);
     int res = getMountPoint(mountpoint,256);
     assert(res!=0);
     printf("mountpoint %s\n",mountpoint);

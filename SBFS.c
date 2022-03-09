@@ -203,7 +203,7 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 		size -= write_bytes;
 	}
 
-	node.size = MAX(node.size, upperbound);
+	node.size = upperbound;
     node.last_access_time = node.last_modify_time = get_nanos();
 
 	write_inode(inum, &node);

@@ -469,7 +469,7 @@ dir *SBFS_readdir(uint64_t inum,int init)
             assert( (node.permission_bits & FILEMASK) >> 12 == DIR);
             item_count = node.size / sizeof(dir);
         }
-        printf("inode size in dir %d %d\n",node.size,present_inum);
+        printf("inode size in dir %ld item count %ld\n",node.size,item_count);
         assert((node.size % sizeof(dir)) == 0);
         while (1) {
             if (i >= item_count)
@@ -533,19 +533,18 @@ int SBFS_rename(char* path,char* newname,unsigned int flags){
     }
     else {
         if (flags == NOREPLACE) {
-            printf("new file exist %s\n",newname);
+            printf("new file exist %s\n", newname);
             return 0;
-        }
-        else if (flags == EXCHANGE) {
-            delete_entry_from_dir(inum_new_parent,new_index);
-            delete_entry_from_dir(inum_old_parent,old_index);
-            printf("old %s new %s\n",old_entry.filename,new_entry.filename);
-            add_entry_to_dir(inum_old_parent,new_entry.filename,new_entry.inum);
-            add_entry_to_dir(inum_new_parent,old_entry.filename,old_entry.inum);
-        }
-        else {
-            printf("invalid flag\n");
-            return 0;
+        } else if (flags == EXCHANGE) {
+            delete_entry_from_dir(inum_new_parent, new_index);
+            delete_entry_from_dir(inum_old_parent, old_index);
+            printf("old %s new %s\n", old_entry.filename, new_entry.filename);
+            add_entry_to_dir(inum_old_parent, new_entry.filename, new_entry.inum);
+            add_entry_to_dir(inum_new_parent, old_entry.filename, old_entry.inum);
+        } else {
+            delete_entry_from_dir(inum_old_parent, old_index);
+            delete_entry_from_dir(inum_new_parent, new_index);
+            add_entry_to_dir(inum_new_parent, new_entry.filename, old_entry.inum);
         }
     }
 
@@ -721,36 +720,7 @@ uint64_t SBFS_opendir(const char* path,unsigned int userId,unsigned int groupId)
         return inum;
     return 0;
 }
-/*
-int main()
-{
-    char buf[] = "hello world";
-    char read_buf[200];
-	dir *entry;
-	SBFS_init();
-    uint64_t inum = SBFS_mkdir("/abc");
-    inum = SBFS_mknod("/testtest1");
-    inum = SBFS_mknod("/abc/testtest1");
-    SBFS_symlink("/abc","/bcd");
-    printf("read symlink %ld\n", read_symlink(5));
-    SBFS_write(inum,0,sizeof(buf),buf);
-    SBFS_truncate("/bcd/testtest1",4);
-    SBFS_chmod("/bcd/testtest1",777);
-    int res = SBFS_rename("/testtest1","/abc/testtest1",EXCHANGE);
-    if(res == 0){
-        printf("failed rename\n");
-        return 0;
-    }
 
-    uint64_t read_size = SBFS_read(inum,0,BLOCKSIZE,read_buf);
-    printf("%s\n",read_buf);
-
-	while (entry = SBFS_readdir(ROOT,0)) {
-		printf("readdir %s inum %ld\n", entry->filename, entry->inum);
-	}
-	return 0;
-}
-*/
 /*TODO:
 
 1. Create a symbolic link (passed)

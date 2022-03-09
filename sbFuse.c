@@ -213,6 +213,13 @@ static int sb_symlink(const char *path, const char *link)
 	return ret > 0 ? 0 : -1;
 }
 
+int sb_lock (const char *path, struct fuse_file_info *fi, int cmd,
+             struct flock *lock){
+    printf("sb_lock\n");
+    return 0;
+}
+
+
 static int sb_rename(const char *path, const char *newpath, unsigned int flags)
 {
 	printf("\nsb_rename(path=\"%s\", newpath=\"%s\" flag %d)\n", path, newpath,flags);
@@ -254,6 +261,17 @@ void sb_destroy (void *private_data){
     SBFS_flush_all();
 }
 
+int sb_flock (const char *, struct fuse_file_info *, int op){
+    printf("sb_flock\n");
+    return 0;
+}
+
+int sb_fallocate (const char *, int, off_t, off_t,
+                  struct fuse_file_info *){
+    printf("sb_flock\n");
+    return 0;
+}
+
 static const struct fuse_operations sb_oper = {
 	.init = sb_init,
 	.readlink = sb_readlink,
@@ -277,7 +295,9 @@ static const struct fuse_operations sb_oper = {
 	.chown = sb_chown,
 	.truncate = sb_truncate,
     .readlink = sb_readlink,
-    .destroy = sb_destroy
+    .destroy = sb_destroy,
+    .lock = sb_lock,
+    .fallocate = sb_fallocate
 };
 
 int main(int argc, char *argv[])

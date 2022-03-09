@@ -545,7 +545,7 @@ int SBFS_rename(char* path,char* newname,unsigned int flags){
             add_entry_to_dir(inum_new_parent,old_entry.filename,old_entry.inum);
         }
         else {
-            printf("invalid flag\n");
+            printf("invalid flag %d avaliable are %d %d\n",flags,NOREPLACE,EXCHANGE);
             return 0;
         }
     }

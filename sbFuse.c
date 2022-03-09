@@ -150,7 +150,7 @@ static int sb_read(const char *path, char *buf, size_t size, off_t offset,
 {
 	printf("\nsb_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi);
 	int ret = SBFS_read(fi->fh, offset, size, buf);
-	printf("read into buf: %s\n", buf);
+	printf("read into buf: %s size %ld\n", buf,ret);
 	return size;
 }
 
@@ -164,9 +164,6 @@ static int sb_write(const char *path, const char *buf, size_t size,
 		return 0;
 	printf("inunm %ld\n", inum);
 	int ret = SBFS_write(inum, offset, size, buf);
-	char temp[4096];
-	SBFS_read(inum, offset, size, temp);
-	printf("%s\n", temp);
 	return size;
 }
 
@@ -196,6 +193,25 @@ static int sb_utimens(const char *path, const struct timespec tv[2], struct fuse
 {
 	int ret = SBFS_utime(path, &tv[2]);
 	return ret > 0 ? 0 : -1;
+}
+int sb_statfs (const char * path, struct statvfs * fs){
+    printf("sb_statfs\n");
+    fs->f_blocks = 1000;
+    return 0;
+}
+
+int sb_fsyncdir (const char *path, int i, struct fuse_file_info *fi){
+    printf("sb_fsyncdir\n");
+    return 0;
+}
+int sb_access (const char *path, int mode){
+    printf("sb_access\n");
+    return 0;
+}
+int sb_lock (const char *path, struct fuse_file_info *fi, int cmd,
+             struct flock *lock){
+    printf("sb_lock\n");
+    return 0;
 }
 
 static int sb_readlink(const char *path, char *buf, size_t size)

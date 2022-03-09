@@ -7,6 +7,11 @@
 #define INDEXMASK 0xF;
 #define INODE_PER_BLOCK (BLOCKSIZE / sizeof(inode))
 
+static uint8_t cache[CACHESIZE][GROUPSIZE][BLOCKSIZE];
+static uint8_t flag[CACHESIZE][GROUPSIZE];
+static uint8_t dirty[CACHESIZE][GROUPSIZE];
+static uint64_t identities[CACHESIZE][GROUPSIZE];
+static uint8_t timestamp[CACHESIZE][GROUPSIZE];
 static uint64_t head = 0;
 static uint64_t i_list_block_count = 0;
 /* the entire inode is loaded into memory, mapping from inum to index is inum - 1 = index*/
@@ -73,13 +78,8 @@ void init_free_disk(int start)
 		start++;
 		datablock[0] = start;
 		write_disk(block_id, datablock);
-		read_disk(block_id,test);
-		uint64_t * test_block = (uint64_t*) test;
-		//printf("block id %d:\n",block_id);
-		/*for(int j = 0;j<(BLOCKSIZE/BLOCKADDR);j++){
-            printf("%ld ",test_block[j]);
-        }
-        printf("\n");*/
+
+        read_disk(block_id,test);
 	}
 
 	if ((BLOCKCOUNT - i_list_block_count - 1) % block_entries_per_block != 0)
@@ -134,25 +134,36 @@ void init_i_list()
 void mkfs()
 {
 	char tmp[BLOCKSIZE];
+    read_disk(0,tmp);
+    uint64_t *supernode = (uint64_t *)tmp;
+    if(supernode[3] != 1) {
+        memset(tmp, 0, sizeof(tmp));
+        init_i_list();
+        //int start = INODES / INODE_PER_BLOCK + 1;
+        int start = i_list_block_count + 1;
+        //start of block
+        supernode[0] = start;
+        supernode[1] = i_list_block_count; //inode block count
+        supernode[2] = BLOCKCOUNT;
+        supernode[3] = 1; //init flag
+        write_disk(0, tmp);
 
-	memset(tmp, 0, sizeof(tmp));
-
-	init_i_list();
-
-	uint64_t *supernode = (uint64_t *)tmp;
-
-	//int start = INODES / INODE_PER_BLOCK + 1;
-	int start = i_list_block_count + 1;
-	//start of block
-	supernode[0] = start;
-	supernode[1] = i_list_block_count; //inode block count
-	supernode[2] = BLOCKSIZE;
-	supernode[3] = 1; //init flag
-	write_disk(0, tmp);
-
-	printf("data block starts from block %d\n", start);
-	init_free_disk(start);
-	//printf("header %ld\n",head);
+        printf("data block starts from block %d\n", start);
+        init_free_disk(start);
+    }
+    else{
+        i_list_block_count = supernode[1];
+        head = supernode[0];
+        in_mem_ilist = (inode*)malloc(INODE_PER_BLOCK*i_list_block_count*sizeof(inode));
+        inode* nodes = (inode*)tmp;
+        for(int i = 1; i<= i_list_block_count;i+=1){
+            read_disk(i,tmp);
+            for(int j=0;j<INODE_PER_BLOCK;j++){
+                memcpy(in_mem_ilist+(i-1)*INODE_PER_BLOCK+j,nodes+j,sizeof(inode));
+            }
+        }
+    }
+    //printf("header %ld\n",head);
 }
 
 /*
@@ -254,7 +265,7 @@ uint64_t allocate_data_block() {
 	uint64_t *data = (uint64_t *)tmp;
 	read_block(head, 0, BLOCKSIZE, tmp);
 	int i = 0;
-	int res = 0;
+	uint64_t res = 0;
 	for (i = 1; i < (BLOCKSIZE / BLOCKADDR); i++)
 	{
 		if (data[i] != 0)
@@ -277,6 +288,7 @@ uint64_t allocate_data_block() {
 		write_block(0, 0, sizeof(uint64_t), &head);
 		write_disk(res, tmp);
 	}
+    printf("block allocated %ld\n",res);
 	return res;
 }
 
@@ -305,6 +317,7 @@ int free_data_block(uint64_t id)
 		head = id;
 		write_block(pre_head, 0, sizeof(uint64_t), &id);
 	}
+    printf("block freed %ld\n",id);
 	return 0;
 }
 
@@ -343,8 +356,100 @@ int write_block(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer)
 	return fmin(size, BLOCKSIZE - offset);
 }
 
+void cache_update_timestamp(int index) {
+	for (int i = 0; i < GROUPSIZE; i++) {
+		if (flag[index][i] == 1)
+			timestamp[index][i] += 1;
+	}
+}
 /**
  * read block return the size of read in actual
+ * size can be greater than BLOCKSIZE, but it will be truncate
  * **/
+int read_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer) {
+	assert(offset<=BLOCKSIZE);
+	int read_size = 0;
+	if(size<(BLOCKSIZE-offset))
+		read_size = size;
+	else
+		read_size = BLOCKSIZE - offset;
+	uint8_t index = block_id & 0xf;
+	uint64_t identity = block_id;
+	cache_update_timestamp(index);
+	for (int i = 0; i < GROUPSIZE; i++) {
+		if (flag[index][i] == 1 & identities[index][i] == identity) {
+			memcpy(buffer, cache[index][i] + offset, read_size);
+			timestamp[index][i] = 0;
+			return read_size;
+		}
+	}
+	int kick_index = 0;
+	for (int i = 0; i < GROUPSIZE; i++) {
+		if(flag[index][i]==0) {
+			kick_index = i;
+			break;
+		}
+		else if(timestamp[index][kick_index] <= timestamp[index][i])
+			kick_index = i;
+	}
+
+	if(dirty[index][kick_index]==1) {
+		write_disk(identities[index][kick_index], cache[index][kick_index]);
+		dirty[index][kick_index] = 0;
+	}
+	flag[index][kick_index] = 1;
+	identities[index][kick_index] = block_id;
+	timestamp[index][kick_index] = 0;
+	read_disk(block_id,cache[index][kick_index]);
+	memcpy(buffer,cache[index][kick_index]+offset,read_size);
+    printf("\nread block cache %ld,offset %ld size %ld buffer %s\n",block_id,offset,size,buffer);
+	return read_size;
+}
+
+int write_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer)
+{
+    printf("\nwrite block cache %ld,offset %ld size %ld buffer %s\n",block_id,offset,size,buffer);
+	assert(offset<BLOCKSIZE);
+	int index = block_id & INDEXMASK;
+	uint64_t identity = block_id;
+	int write_size = 0;
+	if(size<(BLOCKSIZE-offset))
+		write_size = size;
+	else
+		write_size = BLOCKSIZE - offset;
+
+	cache_update_timestamp(index);
+
+	for(int i = 0;i<GROUPSIZE;i++){
+		if(flag[index][i] == 1 && identities[index][i] == identity){
+			memcpy(cache[index][i]+offset,buffer,write_size);
+			timestamp[index][i] = 0;
+			dirty[index][i] = 1;
+			return write_size;
+		}
+	}
+
+	int kick_index = 0;
+	for (int i = 0; i < GROUPSIZE; i++) {
+		if(flag[index][i]==0) {
+			kick_index = i;
+			break;
+		}
+		else if(timestamp[index][kick_index] <= timestamp[index][i])
+			kick_index = i;
+	}
+
+	if(dirty[index][kick_index]==1)
+		write_disk(identities[index][kick_index], cache[index][kick_index]);
+
+	flag[index][kick_index] = 1;
+	dirty[index][kick_index] = 1;
+	identities[index][kick_index] = block_id;
+	timestamp[index][kick_index] = 0;
+	read_disk(block_id,cache[index][kick_index]);
+	memcpy(cache[index][kick_index]+offset,buffer,write_size);
+
+	return write_size;
+}
 
 /* size is for computation convinent */

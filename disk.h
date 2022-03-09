@@ -1,6 +1,6 @@
 #include <stdint.h>
 #define BLOCKSIZE  4096 //4K
-#define BLOCKCOUNT  50000
+#define BLOCKCOUNT  10000
 
 void set_vol(const char* path);
 static uint8_t dev[BLOCKCOUNT][BLOCKSIZE];

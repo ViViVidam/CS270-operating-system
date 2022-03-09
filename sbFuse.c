@@ -164,9 +164,6 @@ static int sb_write(const char *path, const char *buf, size_t size,
 		return 0;
 	printf("inunm %ld\n", inum);
 	int ret = SBFS_write(inum, offset, size, buf);
-	char temp[4096];
-	SBFS_read(inum, offset, size, temp);
-	printf("%s\n", temp);
 	return size;
 }
 

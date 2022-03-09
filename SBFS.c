@@ -10,7 +10,6 @@
 #define MAX(a, b) ((a > b) ? a : b)
 
 int SBFS_getattr(char* path, struct stat* file_state){
-    printf("111111111\n");
     uint64_t inum = SBFS_namei(path);
     if(inum==0) {
         printf("inum not found %s\n",path);
@@ -153,7 +152,7 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
 
-	int read_bytes = read_block_cache(read_block_id, block_offset, read_size, buf);
+	int read_bytes = read_block_cache(read_block_id, block_offset, read_size, buffer);
 	read_size -= read_bytes;
 	buffer += read_bytes;
     //printf("read bytes %d size %ld\n",read_bytes,read_size);
@@ -163,7 +162,7 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 		block_index += 1;
 		uint64_t block_id = block_id_helper(&node, block_index, H_READ);
 		assert(block_id != 0);
-		read_bytes = read_block_cache(block_id, block_offset, size, buf);
+		read_bytes = read_block_cache(block_id, block_offset, size, buffer);
 		buffer += read_bytes;
 		read_size -= read_bytes;
         //printf("read bytes %d size %ld\n",read_bytes,read_size);
@@ -189,7 +188,7 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	uint64_t block_offset = offset % BLOCKSIZE;
 	assert(block_offset < BLOCKSIZE);
 
-	int write_bytes = write_block_cache(write_block_id, block_offset, size, buf);
+	int write_bytes = write_block_cache(write_block_id, block_offset, size, buffer);
 	size -= write_bytes;
 	buffer += write_bytes;
     //printf("write bytes %d size %ld\n",write_bytes,size);
@@ -198,7 +197,7 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 		block_index += 1;
         //printf("start %d\n",block_index);
 		write_block_id = block_id_helper(&node, block_index, H_CREATE);
-		write_bytes = write_block_cache(write_block_id, block_offset, size, buf);
+		write_bytes = write_block_cache(write_block_id, block_offset, size, buffer);
 		buffer += write_bytes;
 		size -= write_bytes;
 	}

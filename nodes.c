@@ -264,7 +264,7 @@ uint64_t allocate_data_block() {
 	uint64_t *data = (uint64_t *)tmp;
 	read_block(head, 0, BLOCKSIZE, tmp);
 	int i = 0;
-	int res = 0;
+	uint64_t res = 0;
 	for (i = 1; i < (BLOCKSIZE / BLOCKADDR); i++)
 	{
 		if (data[i] != 0)
@@ -287,6 +287,7 @@ uint64_t allocate_data_block() {
 		write_block(0, 0, sizeof(uint64_t), &head);
 		write_disk(res, tmp);
 	}
+    printf("block allocated %ld\n",res);
 	return res;
 }
 
@@ -315,6 +316,7 @@ int free_data_block(uint64_t id)
 		head = id;
 		write_block(pre_head, 0, sizeof(uint64_t), &id);
 	}
+    printf("block freed %ld\n",id);
 	return 0;
 }
 
@@ -361,6 +363,7 @@ void cache_update_timestamp(int index) {
 }
 /**
  * read block return the size of read in actual
+ * size can be greater than BLOCKSIZE, but it will be truncate
  * **/
 int read_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer) {
 	assert(offset<=BLOCKSIZE);
@@ -398,11 +401,13 @@ int read_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *bu
 	timestamp[index][kick_index] = 0;
 	read_disk(block_id,cache[index][kick_index]);
 	memcpy(buffer,cache[index][kick_index]+offset,read_size);
+    printf("\nread block cache %ld,offset %ld size %ld buffer %s\n",block_id,offset,size,buffer);
 	return read_size;
 }
 
 int write_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer)
 {
+    printf("\nwrite block cache %ld,offset %ld size %ld buffer %s\n",block_id,offset,size,buffer);
 	assert(offset<BLOCKSIZE);
 	int index = block_id & INDEXMASK;
 	uint64_t identity = block_id;

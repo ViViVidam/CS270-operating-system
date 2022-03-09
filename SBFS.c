@@ -192,11 +192,9 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 	int write_bytes = write_block_cache(write_block_id, block_offset, size, buf);
 	size -= write_bytes;
 	buffer += write_bytes;
-    //printf("write bytes %d size %ld\n",write_bytes,size);
 	while (size > 0)
 	{
 		block_index += 1;
-        //printf("start %d\n",block_index);
 		write_block_id = block_id_helper(&node, block_index, H_CREATE);
 		write_bytes = write_block_cache(write_block_id, block_offset, size, buf);
 		buffer += write_bytes;

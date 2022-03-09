@@ -109,11 +109,6 @@ void init_free_disk(int start)
 		write_disk(block_id, datablock); //rewrite the last block
         read_disk(block_id,test);
         uint64_t * test_block = (uint64_t*) test;
-        /*printf("block id %d:\n",block_id);
-        for(int j = 0;j<(BLOCKSIZE/BLOCKADDR);j++){
-            printf("%ld ",test_block[j]);
-        }
-        printf("\n");*/
 	}
 }
 
@@ -273,7 +268,7 @@ uint64_t allocate_data_block() {
 	uint64_t *data = (uint64_t *)tmp;
 	read_block(head, 0, BLOCKSIZE, tmp);
 	int i = 0;
-	int res = 0;
+	uint64_t res = 0;
 	for (i = 1; i < (BLOCKSIZE / BLOCKADDR); i++)
 	{
 		if (data[i] != 0)
@@ -296,6 +291,7 @@ uint64_t allocate_data_block() {
 		write_block(0, 0, sizeof(uint64_t), &head);
 		write_disk(res, tmp);
 	}
+    printf("allocated %ld\n",res);
 	return res;
 }
 
@@ -324,6 +320,7 @@ int free_data_block(uint64_t id)
 		head = id;
 		write_block(pre_head, 0, sizeof(uint64_t), &id);
 	}
+    printf("freed %ld\n",id);
 	return 0;
 }
 

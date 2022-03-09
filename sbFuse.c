@@ -266,7 +266,7 @@ int sb_flock (const char *path, struct fuse_file_info *fi, int op){
     return 0;
 }
 
-int sb_fallocate (const char *path , int, off_t offset, off_t size,
+int sb_fallocate (const char *path , int f, off_t offset, off_t size,
                   struct fuse_file_info *fi){
     printf("sb_flock\n");
     return 0;

@@ -261,12 +261,12 @@ void sb_destroy (void *private_data){
     SBFS_flush_all();
 }
 
-int sb_flock (const char *, struct fuse_file_info *, int op){
+int sb_flock (const char *path, struct fuse_file_info *fi, int op){
     printf("sb_flock\n");
     return 0;
 }
 
-int sb_fallocate (const char *, int, off_t, off_t,
+int sb_fallocate (const char *path , int, off_t offset, off_t size,
                   struct fuse_file_info *){
     printf("sb_flock\n");
     return 0;

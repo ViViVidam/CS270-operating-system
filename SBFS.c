@@ -10,7 +10,6 @@
 #define MAX(a, b) ((a > b) ? a : b)
 
 int SBFS_getattr(char* path, struct stat* file_state){
-    printf("111111111\n");
     uint64_t inum = SBFS_namei(path);
     if(inum==0) {
         printf("inum not found %s\n",path);
@@ -153,19 +152,19 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
     uint64_t block_offset = offset % BLOCKSIZE;
     assert(block_offset < BLOCKSIZE);
 
-    int read_bytes = read_block_cache(read_block_id, block_offset, read_size, buffer);
-    read_size -= read_bytes;
-    buffer += read_bytes;
+	int read_bytes = read_block_cache(read_block_id, block_offset, read_size, buffer);
+	read_size -= read_bytes;
+	buffer += read_bytes;
     //printf("read bytes %d size %ld\n",read_bytes,read_size);
 
-    while (read_size > 0)
-    {
-        block_index += 1;
-        uint64_t block_id = block_id_helper(&node, block_index, H_READ);
-        assert(block_id != 0);
-        read_bytes = read_block_cache(block_id, block_offset, size, buffer);
-        buffer += read_bytes;
-        read_size -= read_bytes;
+	while (read_size > 0)
+	{
+		block_index += 1;
+		uint64_t block_id = block_id_helper(&node, block_index, H_READ);
+		assert(block_id != 0);
+		read_bytes = read_block_cache(block_id, block_offset, size, buffer);
+		buffer += read_bytes;
+		read_size -= read_bytes;
         //printf("read bytes %d size %ld\n",read_bytes,read_size);
     }
 
@@ -188,22 +187,21 @@ int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
     int write_block_id = block_id_helper(&node, offset / BLOCKSIZE, H_CREATE);
     uint64_t block_offset = offset % BLOCKSIZE;
     assert(block_offset < BLOCKSIZE);
-
-    int write_bytes = write_block_cache(write_block_id, block_offset, size, buffer);
-    size -= write_bytes;
-    buffer += write_bytes;
+	int write_bytes = write_block_cache(write_block_id, block_offset, size, buffer);
+	size -= write_bytes;
+	buffer += write_bytes;
     //printf("write bytes %d size %ld\n",write_bytes,size);
     while (size > 0)
     {
         block_index += 1;
         //printf("start %d\n",block_index);
-        write_block_id = block_id_helper(&node, block_index, H_CREATE);
-        write_bytes = write_block_cache(write_block_id, block_offset, size, buffer);
-        buffer += write_bytes;
-        size -= write_bytes;
-    }
+		write_block_id = block_id_helper(&node, block_index, H_CREATE);
+		write_bytes = write_block_cache(write_block_id, block_offset, size, buffer);
+		buffer += write_bytes;
+		size -= write_bytes;
+	}
 
-    node.size = upperbound;
+	node.size = upperbound;
     node.last_access_time = node.last_modify_time = get_nanos();
 
     write_inode(inum, &node);
@@ -469,7 +467,7 @@ dir *SBFS_readdir(uint64_t inum,int init)
             assert( (node.permission_bits & FILEMASK) >> 12 == DIR);
             item_count = node.size / sizeof(dir);
         }
-        printf("inode size in dir %d %d\n",node.size,present_inum);
+        printf("inode size in dir %ld item count %ld\n",node.size,item_count);
         assert((node.size % sizeof(dir)) == 0);
         while (1) {
             if (i >= item_count)
@@ -533,20 +531,18 @@ int SBFS_rename(char* path,char* newname,unsigned int flags){
     }
     else {
         if (flags == NOREPLACE) {
-            printf("new file exist %s\n",newname);
+            printf("new file exist %s\n", newname);
             return 0;
-        }
-        else if (flags == EXCHANGE) {
-            delete_entry_from_dir(inum_new_parent,new_index);
-            delete_entry_from_dir(inum_old_parent,old_index);
-            printf("old %s new %s\n",old_entry.filename,new_entry.filename);
-            add_entry_to_dir(inum_old_parent,old_entry.filename,new_entry.inum);
-            add_entry_to_dir(inum_new_parent,new_entry.filename,old_entry.inum);
-        }
-        else {
-            delete_entry_from_dir(inum_old_parent,old_index);
-            delete_entry_from_dir(inum_new_parent,new_index);
-            add_entry_to_dir(inum_new_parent,new_entry.filename,old_entry.inum);
+        } else if (flags == EXCHANGE) {
+            delete_entry_from_dir(inum_new_parent, new_index);
+            delete_entry_from_dir(inum_old_parent, old_index);
+            printf("old %s new %s\n", old_entry.filename, new_entry.filename);
+            add_entry_to_dir(inum_old_parent, new_entry.filename, new_entry.inum);
+            add_entry_to_dir(inum_new_parent, old_entry.filename, old_entry.inum);
+        } else {
+            delete_entry_from_dir(inum_old_parent, old_index);
+            delete_entry_from_dir(inum_new_parent, new_index);
+            add_entry_to_dir(inum_new_parent, new_entry.filename, old_entry.inum);
         }
     }
 
@@ -596,8 +592,10 @@ int SBFS_symlink(char* path,char* filename) {
     dir entry;
     char entry_name[MAX_FILENAME];
     printf("SBFS_symlink %s\n",path);
-    if(get_entryname(filename, entry_name)==0)
+    if(get_entryname(filename, entry_name)==0) {
+        printf("entry name to long\n");
         return 0;
+    }
     uint64_t new_parent_inum = find_parent_dir_inum(filename);
     if (new_parent_inum == 0) {
         printf("parent path %s not found", filename);
@@ -720,6 +718,7 @@ uint64_t SBFS_opendir(const char* path,unsigned int userId,unsigned int groupId)
         return inum;
     return 0;
 }
+<<<<<<< HEAD
 
 void SBFS_flush_all(){
     cache_flush_all();
@@ -744,16 +743,9 @@ int main()
         printf("failed rename\n");
         return 0;
     }
+=======
+>>>>>>> develop
 
-    uint64_t read_size = SBFS_read(inum,0,BLOCKSIZE,read_buf);
-    printf("%s\n",read_buf);
-
-	while (entry = SBFS_readdir(ROOT,0)) {
-		printf("readdir %s inum %ld\n", entry->filename, entry->inum);
-	}
-	return 0;
-}
-*/
 /*TODO:
 
 1. Create a symbolic link (passed)

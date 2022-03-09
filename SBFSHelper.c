@@ -208,6 +208,7 @@ uint64_t block_id_helper(inode *node, int index, int mode)
     }
     else if (index < (DIRECT_BLOCK + SING_INDIR * 512))
     {
+        printf("\n\n\nsecond phase\n");
         if (node->sing_indirect_blocks[0] == 0 && mode == H_CREATE)
         {
             if (mode == H_CREATE)
@@ -225,6 +226,7 @@ uint64_t block_id_helper(inode *node, int index, int mode)
             address[index - DIRECT_BLOCK] = allocate_data_block();
             write_block(node->sing_indirect_blocks[0], 0, BLOCKSIZE, tmp);
         }
+        printf("address[%ld] = %ld\n\n\n",index-DIRECT_BLOCK,address[index - DIRECT_BLOCK]);
         return address[index - DIRECT_BLOCK];
     }
     else if (index < (DIRECT_BLOCK + SING_INDIR * 512 + DOUB_INDIR * 512 * 512))

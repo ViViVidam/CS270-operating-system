@@ -541,13 +541,13 @@ int SBFS_rename(char* path,char* newname,unsigned int flags){
             delete_entry_from_dir(inum_new_parent,new_index);
             delete_entry_from_dir(inum_old_parent,old_index);
             printf("old %s new %s\n",old_entry.filename,new_entry.filename);
-            add_entry_to_dir(inum_old_parent,new_entry.filename,new_entry.inum);
-            add_entry_to_dir(inum_new_parent,old_entry.filename,old_entry.inum);
+            add_entry_to_dir(inum_old_parent,old_entry.filename,new_entry.inum);
+            add_entry_to_dir(inum_new_parent,new_entry.filename,old_entry.inum);
         }
         else {
             delete_entry_from_dir(inum_old_parent,old_index);
             delete_entry_from_dir(inum_new_parent,new_index);
-            add_entry_to_dir(inum_new_parent,old_entry.filename,old_entry.inum);
+            add_entry_to_dir(inum_new_parent,new_entry.filename,old_entry.inum);
         }
     }
 

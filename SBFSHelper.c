@@ -102,13 +102,20 @@ uint64_t add_entry_to_dir(uint64_t dir_inum, char *entryname, uint64_t file_inum
         {
             strcpy(entry.filename, entryname);
             entry.inum = file_inum;
+            uint64_t tmp = node.size;
             SBFS_write(dir_inum, i * sizeof(entry), sizeof(entry), &entry);
+            read_inode(dir_inum, &node);
+            node.size = tmp;
+            write_inode(dir_inum,&node);
             return i;
         }
     }
     strcpy(entry.filename, entryname);
     entry.inum = file_inum;
+    uint64_t tmp = node.size;
     SBFS_write(dir_inum, i * sizeof(entry), sizeof(entry), &entry);
+    read_inode(dir_inum, &node);
+    assert((tmp+sizeof(entry))==node.size);
     return i;
 }
 
@@ -120,7 +127,11 @@ int delete_entry_from_dir(uint64_t dir_inum, int index)
     assert(node.size % sizeof(dir) == 0);
     SBFS_readdir_raw(dir_inum, index, &entry);
     entry.inum = 0;
+    uint64_t tmp = node.size;
     SBFS_write(dir_inum, index * sizeof(entry), sizeof(entry), &entry);
+    read_inode(dir_inum, &node);
+    node.size = tmp;
+    write_inode(dir_inum,&node);
     return 1;
 }
 /**
@@ -169,7 +180,11 @@ int write_entry(uint64_t dir_inum, int index, dir* entry){
     inode node;
     read_inode(dir_inum, &node);
     assert((node.permission_bits & FILEMASK) >> 12 == DIR);
+    uint64_t tmp = node.size;
     SBFS_write(dir_inum,index*sizeof(dir),sizeof(dir),entry);
+    read_inode(dir_inum, &node);
+    node.size = tmp;
+    write_inode(dir_inum,&node);
     return 1;
 }
 
@@ -351,6 +366,7 @@ int getMountPoint(char* buf,size_t size) {
     if(fp==NULL)
         return 0;
     while (fgets(line, 128, fp)) {
+        printf("%s\n",line);
         if (line[0] == 'm' && line[1] == 'a' && line[2] == 'i' && line[3] == 'n' && line[4] == ' ') {
             int i = 5;
             while (line[i] != ' ' && (i - 5) < size && line[i] != 0) {

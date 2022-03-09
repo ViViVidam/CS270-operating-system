@@ -136,8 +136,8 @@ int mkfs()
     printf("set volume /dev/vdc\n");
     set_vol("/dev/vdc");
     read_disk(0,tmp);
-    //if(supernode[3] != 1) {
-    if(1){
+    if(supernode[3] != 1) {
+    //if(1){
         printf("no system mounted\nmounting fs...\n");
         memset(tmp, 0, sizeof(tmp));
         init_i_list();

@@ -595,8 +595,10 @@ int SBFS_symlink(char* path,char* filename) {
     dir entry;
     char entry_name[MAX_FILENAME];
     printf("SBFS_symlink %s\n",path);
-    if(get_entryname(filename, entry_name)==0)
+    if(get_entryname(filename, entry_name)==0) {
+        printf("entry name to long\n");
         return 0;
+    }
     uint64_t new_parent_inum = find_parent_dir_inum(filename);
     if (new_parent_inum == 0) {
         printf("parent path %s not found", filename);

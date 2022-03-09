@@ -2,9 +2,10 @@
 #include <string.h>
 int main(int argc,char *argv[]){
     FILE* fp = fopen(argv[1],"w+");
-
+    char buf[512];
     if(fp!=NULL) {
-        fwrite(argv[2],sizeof(char), strlen(argv[3]),fp);
+        fread(buf,sizeof(char), 512,fp);
+        printf("read from file: %s\n",buf);
         fclose(fp);
     }
     else

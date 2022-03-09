@@ -136,42 +136,42 @@ uint64_t SBFS_namei(char *path) {
 
 int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 {
-	char *buffer = (char *)buf;
-	inode node;
-    
-	read_inode(inum, &node);
+    char *buffer = (char *)buf;
+    inode node;
+
+    read_inode(inum, &node);
     if(node.size<offset){
         strcpy(buf,"");
         return 0;
     }
-	int read_size, pre_size;
+    int read_size, pre_size;
     read_size = pre_size = MIN(size,node.size-offset);
 
     //printf("read block inum %ld offset %ld size %ld\n",inum,offset,size);
     int block_index = offset / BLOCKSIZE;
-	uint64_t read_block_id = block_id_helper(&node, block_index, H_READ);
-	uint64_t block_offset = offset % BLOCKSIZE;
-	assert(block_offset < BLOCKSIZE);
+    uint64_t read_block_id = block_id_helper(&node, block_index, H_READ);
+    uint64_t block_offset = offset % BLOCKSIZE;
+    assert(block_offset < BLOCKSIZE);
 
-	int read_bytes = read_block_cache(read_block_id, block_offset, read_size, buf);
-	read_size -= read_bytes;
-	buffer += read_bytes;
+    int read_bytes = read_block_cache(read_block_id, block_offset, read_size, buffer);
+    read_size -= read_bytes;
+    buffer += read_bytes;
     //printf("read bytes %d size %ld\n",read_bytes,read_size);
 
-	while (read_size > 0)
-	{
-		block_index += 1;
-		uint64_t block_id = block_id_helper(&node, block_index, H_READ);
-		assert(block_id != 0);
-		read_bytes = read_block_cache(block_id, block_offset, size, buf);
-		buffer += read_bytes;
-		read_size -= read_bytes;
+    while (read_size > 0)
+    {
+        block_index += 1;
+        uint64_t block_id = block_id_helper(&node, block_index, H_READ);
+        assert(block_id != 0);
+        read_bytes = read_block_cache(block_id, block_offset, size, buffer);
+        buffer += read_bytes;
+        read_size -= read_bytes;
         //printf("read bytes %d size %ld\n",read_bytes,read_size);
-	}
+    }
 
     node.last_access_time = get_nanos();
     write_inode(inum,&node);
-	return pre_size;
+    return pre_size;
 }
 /* mode H_READ, don't create new block,mode H_CREATE create new block
  * the corresponding inode where and what size
@@ -179,34 +179,35 @@ int SBFS_read(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 
 int SBFS_write(uint64_t inum, uint64_t offset, int64_t size, void *buf)
 {
-	inode node;
-	read_inode(inum, &node);
+    inode node;
+    read_inode(inum, &node);
 
-	char *buffer = (char *)buf;
-	uint64_t upperbound = size + offset;
+    char *buffer = (char *)buf;
+    uint64_t upperbound = size + offset;
     int block_index = offset / BLOCKSIZE;
-	int write_block_id = block_id_helper(&node, offset / BLOCKSIZE, H_CREATE);
-	uint64_t block_offset = offset % BLOCKSIZE;
-	assert(block_offset < BLOCKSIZE);
+    int write_block_id = block_id_helper(&node, offset / BLOCKSIZE, H_CREATE);
+    uint64_t block_offset = offset % BLOCKSIZE;
+    assert(block_offset < BLOCKSIZE);
 
-	int write_bytes = write_block_cache(write_block_id, block_offset, size, buf);
-	size -= write_bytes;
-	buffer += write_bytes;
-	while (size > 0)
-	{
-		block_index += 1;
-		write_block_id = block_id_helper(&node, block_index, H_CREATE);
-		write_bytes = write_block_cache(write_block_id, block_offset, size, buf);
-		buffer += write_bytes;
-		size -= write_bytes;
-	}
+    int write_bytes = write_block_cache(write_block_id, block_offset, size, buffer);
+    size -= write_bytes;
+    buffer += write_bytes;
+    //printf("write bytes %d size %ld\n",write_bytes,size);
+    while (size > 0)
+    {
+        block_index += 1;
+        //printf("start %d\n",block_index);
+        write_block_id = block_id_helper(&node, block_index, H_CREATE);
+        write_bytes = write_block_cache(write_block_id, block_offset, size, buffer);
+        buffer += write_bytes;
+        size -= write_bytes;
+    }
 
-	//node.size = MIN(node.size, upperbound);
     node.size = upperbound;
     node.last_access_time = node.last_modify_time = get_nanos();
 
-	write_inode(inum, &node);
-	return size;
+    write_inode(inum, &node);
+    return size;
 }
 
 /* direcotry is dir, the item is empty when inode = 0 */

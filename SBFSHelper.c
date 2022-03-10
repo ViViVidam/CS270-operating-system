@@ -208,6 +208,7 @@ uint64_t block_id_helper(inode *node, int index, int mode)
     }
     else if (index < (DIRECT_BLOCK + SING_INDIR * 512))
     {
+        printf("size %ld\n",sizeof(zero)/sizeof(uint64_t));
         if (node->sing_indirect_blocks[0] == 0)
         {
             if (mode == H_CREATE)
@@ -235,20 +236,20 @@ uint64_t block_id_helper(inode *node, int index, int mode)
             if (mode == H_CREATE)
             {
                 node->doub_indirect_blocks[0] = allocate_data_block();
-                write_block(node->doub_indirect_blocks[0], 0, BLOCKSIZE, zero);
+                write_block_cache(node->doub_indirect_blocks[0], 0, BLOCKSIZE, zero);
             }
             else
                 return 0;
         }
-        read_block(node->doub_indirect_blocks[0], 0, BLOCKSIZE, tmp);
+        read_block_cache(node->doub_indirect_blocks[0], 0, BLOCKSIZE, tmp);
         int next_level_index = (index - DIRECT_BLOCK - SING_INDIR * 512) / 512;
         if (address[next_level_index] == 0)
         {
             if (mode == H_CREATE)
             {
                 address[next_level_index] = allocate_data_block();
-                write_block(node->doub_indirect_blocks[0], 0, BLOCKSIZE, tmp);
-                write_block(address[next_level_index], 0, BLOCKSIZE, zero);
+                write_block_cache(node->doub_indirect_blocks[0], 0, BLOCKSIZE, tmp);
+                write_block_cache(address[next_level_index], 0, BLOCKSIZE, zero);
             }
             else
                 return 0;

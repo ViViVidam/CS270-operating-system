@@ -189,29 +189,9 @@ static int sb_rmdir(const char *path)
 	return ret;
 }
 
-static int sb_utimens(const char *path, const struct timespec tv[2], struct fuse_file_info *fi)
-{
-	int ret = SBFS_utime(path, &tv[2]);
-	return ret > 0 ? 0 : -1;
-}
-int sb_statfs (const char * path, struct statvfs * fs){
-    printf("sb_statfs\n");
-    fs->f_blocks = 1000;
-    return 0;
-}
-
-int sb_fsyncdir (const char *path, int i, struct fuse_file_info *fi){
-    printf("sb_fsyncdir\n");
-    return 0;
-}
-int sb_access (const char *path, int mode){
-    printf("sb_access\n");
-    return 0;
-}
-int sb_lock (const char *path, struct fuse_file_info *fi, int cmd,
-             struct flock *lock){
-    printf("sb_lock\n");
-    return 0;
+static int sb_utimens(const char *path, const struct timespec tv[2], struct fuse_file_info *fi) {
+    int ret = SBFS_utime(path, &tv[2]);
+    return ret > 0 ? 0 : -1;
 }
 
 static int sb_readlink(const char *path, char *buf, size_t size)
@@ -291,7 +271,7 @@ static const struct fuse_operations sb_oper = {
 	.chmod = sb_chmod,
 	.chown = sb_chown,
 	.truncate = sb_truncate,
-    .readlink = sb_readlink
+    .readlink = sb_readlink,
 };
 
 int main(int argc, char *argv[])

@@ -7,7 +7,6 @@
 #include <fcntl.h>
 
 #define MIN(a, b) ((a > b) ? b : a)
-#define MAX(a, b) ((a > b) ? a : b)
 
 int SBFS_getattr(char* path, struct stat* file_state){
     uint64_t inum = SBFS_namei(path);

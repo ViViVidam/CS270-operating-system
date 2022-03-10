@@ -372,7 +372,7 @@ int read_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *bu
 		read_size = size;
 	else
 		read_size = BLOCKSIZE - offset;
-	uint8_t index = block_id & 0xf;
+	uint8_t index = block_id & INDEXMASK;
 	uint64_t identity = block_id;
 	cache_update_timestamp(index);
 	for (int i = 0; i < GROUPSIZE; i++) {
@@ -451,4 +451,13 @@ int write_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *b
 	return write_size;
 }
 
+void cache_flush(uint64_t id){
+    int index = id & INDEXMASK;
+    for(int i = 0; i < GROUPSIZE; i++){
+        if(flag[index][i]==1 && dirty[index][i]==1 && identities[index][i]==id){
+            write_disk(id,cache[index][i]);
+            break;
+        }
+    }
+}
 /* size is for computation convinent */

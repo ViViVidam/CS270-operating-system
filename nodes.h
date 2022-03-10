@@ -49,6 +49,7 @@ int write_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);
 int read_block(uint64_t block_id,uint64_t offset,uint64_t size,void* buffer);
 int write_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer);
 int read_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer);
+void cache_flush(uint64_t block_id);
 
 void read_inode(uint64_t inum,inode* node);
 void write_inode(uint64_t inum,inode* node);

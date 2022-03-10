@@ -261,6 +261,7 @@ uint64_t block_id_helper(inode *node, int index, int mode)
             address[index] = allocate_data_block();
             write_block(parent_id, 0, BLOCKSIZE, tmp);
         }
+        printf("return node->double indirect_blocks[%d] %ld\n",index,address[index - DIRECT_BLOCK]);
         return address[index];
     }
     else
@@ -310,6 +311,7 @@ uint64_t block_id_helper(inode *node, int index, int mode)
             address[index] = allocate_data_block();
             write_block(parent_id, 0, BLOCKSIZE, tmp);
         }
+        printf("return node->trip indirect_blocks[%d] %ld\n",index,address[index - DIRECT_BLOCK]);
         return address[index];
     }
 }

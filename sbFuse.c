@@ -294,12 +294,7 @@ static const struct fuse_operations sb_oper = {
 	.chown = sb_chown,
 	.truncate = sb_truncate,
     .readlink = sb_readlink,
-<<<<<<< HEAD
     .destroy = sb_destroy,
-    .lock = sb_lock,
-    .fallocate = sb_fallocate
-=======
->>>>>>> develop
 };
 
 int main(int argc, char *argv[])

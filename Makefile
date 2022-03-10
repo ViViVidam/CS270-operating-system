@@ -3,7 +3,6 @@ CC = gcc
 run:  disk.c nodes.c SBFS.c sbFuse.c SBFSHelper.c sbfuseHelper.c
 	$(CC) -Wall disk.c nodes.c SBFSHelper.c SBFS.c sbfuseHelper.c sbFuse.c -lm `pkg-config fuse3 --cflags --libs` -o main
 	./main mount
-	echo "hello world!" > mount/hello
 
 gcc9:
 	scl enable devtoolset-9 bash

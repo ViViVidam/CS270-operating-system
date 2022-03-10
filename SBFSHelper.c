@@ -208,23 +208,24 @@ uint64_t block_id_helper(inode *node, int index, int mode)
     }
     else if (index < (DIRECT_BLOCK + SING_INDIR * 512))
     {
-        if (node->sing_indirect_blocks[0] == 0 && mode == H_CREATE)
+        if (node->sing_indirect_blocks[0] == 0)
         {
             if (mode == H_CREATE)
             {
                 node->sing_indirect_blocks[0] = allocate_data_block();
-                write_block(node->sing_indirect_blocks[0], 0, BLOCKSIZE, zero);
+                write_block_cache(node->sing_indirect_blocks[0], 0, BLOCKSIZE, zero);
             }
             else
                 return 0;
         }
         // I/O can be cut down, but I will leave it for now
-        read_block(node->sing_indirect_blocks[0], 0, BLOCKSIZE, tmp);
+        read_block_cache(node->sing_indirect_blocks[0], 0, BLOCKSIZE, tmp);
         if (address[index - DIRECT_BLOCK] == 0 && mode == H_CREATE)
         {
             address[index - DIRECT_BLOCK] = allocate_data_block();
-            write_block(node->sing_indirect_blocks[0], 0, BLOCKSIZE, tmp);
+            write_block_cache(node->sing_indirect_blocks[0], 0, BLOCKSIZE, tmp);
         }
+        printf("return node->single indirect_blocks[%d] %ld\n",index,address[index - DIRECT_BLOCK]);
         return address[index - DIRECT_BLOCK];
     }
     else if (index < (DIRECT_BLOCK + SING_INDIR * 512 + DOUB_INDIR * 512 * 512))
@@ -366,7 +367,6 @@ int getMountPoint(char* buf,size_t size) {
     if(fp==NULL)
         return 0;
     while (fgets(line, 128, fp)) {
-        printf("%s\n",line);
         if (line[0] == 'm' && line[1] == 'a' && line[2] == 'i' && line[3] == 'n' && line[4] == ' ') {
             int i = 5;
             while (line[i] != ' ' && (i - 5) < size && line[i] != 0) {

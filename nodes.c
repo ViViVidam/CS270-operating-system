@@ -226,7 +226,16 @@ int free_inode(uint64_t inum) {
 	}
 	for (int i = 0; i < SING_INDIR; i++)
 	{
+        char buf[BLOCKSIZE];
+        uint64_t * table = (uint64_t*) buf;
 		if(tmp.sing_indirect_blocks[i]) {
+            read_disk(tmp.sing_indirect_blocks[i],table);
+            for(int j = 0;j<512;j++){
+                if(table[j]!=0)
+                    free_data_block(table[j]);
+                else
+                    break;
+            }
 			free_data_block(tmp.sing_indirect_blocks[i] = 0);
 			tmp.sing_indirect_blocks[i] = 0;
 		}
@@ -234,7 +243,26 @@ int free_inode(uint64_t inum) {
 			break;
 	}
 	for (int i = 0; i < DOUB_INDIR; i++){
+        char buf1[BLOCKSIZE];
+        uint64_t * L1table = (uint64_t*) buf1;
+        char buf2[BLOCKSIZE];
+        uint64_t * L2table = (uint64_t*) buf2;
 		if(tmp.doub_indirect_blocks[i]) {
+            read_disk(tmp.doub_indirect_blocks[i],L1table);
+            for(int j =0;j<512;j++){
+                if(L1table[j]!=0) {
+                    read_disk(L1table[j],L2table);
+                    for (int k = 0; k < 512; k++) {
+                        if(L2table[k])
+                        free_data_block(L2table[k]);
+                        else
+                            break;
+                    }
+                    free_data_block(L1table[j]);
+                }
+                else
+                    break;
+            }
 			free_data_block(tmp.doub_indirect_blocks[i] = 0);
 			tmp.doub_indirect_blocks[i] = 0;
 		}

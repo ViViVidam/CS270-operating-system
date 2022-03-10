@@ -16,7 +16,7 @@ static uint64_t head = 0;
 static uint64_t i_list_block_count = 0;
 /* the entire inode is loaded into memory, mapping from inum to index is inum - 1 = index*/
 static inode* in_mem_ilist;
-
+static uint64_t last_allocated = 1;
 
 void cp_inode(inode *dest, inode *source)
 {
@@ -178,7 +178,7 @@ void read_inode(uint64_t inum, inode *node){
 uint64_t allocate_inode() {
 	char tmp[BLOCKSIZE];
 	int i, flag = 0;
-	for (i = 1; i <= i_list_block_count*INODE_PER_BLOCK; i++){
+	for (i = last_allocated; i <= i_list_block_count*INODE_PER_BLOCK; i++){
 		if( (in_mem_ilist[i-1].permission_bits & FLAGMASK) == 0){
             int block_id = (i - 1) / INODE_PER_BLOCK;
             int offset = (i - 1) % INODE_PER_BLOCK;
@@ -188,7 +188,7 @@ uint64_t allocate_inode() {
             inodes[offset].link = 1;
             in_mem_ilist[i-1].permission_bits = in_mem_ilist[i-1].permission_bits | (1 << 15);
             in_mem_ilist[i-1].link = 1;
-//            printf("allocate inode %d %x\n",i ,inodes[offset].permission_bits & FLAGMASK);
+            last_allocated = i + 1;
             write_disk(block_id,tmp);
             flag = 1;
             break;
@@ -255,7 +255,7 @@ int free_inode(uint64_t inum) {
     tmp.permission_bits = 0;
 	tmp.size = 0;
 	write_block(block_id, sizeof(inode) * offset, sizeof(inode), &tmp);
-
+    last_allocated = inum;
 	return 0;
 }
 

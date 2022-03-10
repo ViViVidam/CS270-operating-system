@@ -717,7 +717,6 @@ uint64_t SBFS_opendir(const char* path,unsigned int userId,unsigned int groupId)
         return inum;
     return 0;
 }
-<<<<<<< HEAD
 
 void SBFS_flush_all(){
     cache_flush_all();

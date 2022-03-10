@@ -133,8 +133,12 @@ void init_i_list()
 int mkfs()
 {
     char tmp[BLOCKSIZE];
-    read_disk(0,tmp);
     uint64_t *supernode = (uint64_t *)tmp;
+    read_disk(0,tmp);
+    FILE* fp = fopen("config","r");
+    char path[100];
+    fscanf(fp,"%s",path);
+    set_vol(path);
     if(supernode[3] != 1) {
         memset(tmp, 0, sizeof(tmp));
         init_i_list();

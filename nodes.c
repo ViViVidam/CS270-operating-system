@@ -401,13 +401,13 @@ int read_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *bu
 	timestamp[index][kick_index] = 0;
 	read_disk(block_id,cache[index][kick_index]);
 	memcpy(buffer,cache[index][kick_index]+offset,read_size);
-    printf("\nread block cache %ld,offset %ld size %ld buffer %s\n",block_id,offset,size,buffer);
+    //printf("\nread block cache %ld,offset %ld size %ld buffer %s\n",block_id,offset,size,buffer);
 	return read_size;
 }
 
 int write_block_cache(uint64_t block_id, uint64_t offset, uint64_t size, void *buffer)
 {
-    printf("\nwrite block cache %ld,offset %ld size %ld buffer %s\n",block_id,offset,size,buffer);
+    //printf("\nwrite block cache %ld,offset %ld size %ld buffer %s\n",block_id,offset,size,buffer);
 	assert(offset<BLOCKSIZE);
 	int index = block_id & INDEXMASK;
 	uint64_t identity = block_id;

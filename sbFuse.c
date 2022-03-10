@@ -150,7 +150,6 @@ static int sb_read(const char *path, char *buf, size_t size, off_t offset,
 {
 	printf("\nsb_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n", path, buf, size, offset, fi);
 	int ret = SBFS_read(fi->fh, offset, size, buf);
-	printf("read into buf: %s size %ld\n", buf,ret);
 	return size;
 }
 

@@ -109,11 +109,6 @@ void init_free_disk(int start)
         write_disk(block_id, datablock); //rewrite the last block
         read_disk(block_id,test);
         uint64_t * test_block = (uint64_t*) test;
-        /*printf("block id %d:\n",block_id);
-        for(int j = 0;j<(BLOCKSIZE/BLOCKADDR);j++){
-            printf("%ld ",test_block[j]);
-        }
-        printf("\n");*/
     }
 }
 

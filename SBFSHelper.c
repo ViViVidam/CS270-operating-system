@@ -203,7 +203,7 @@ uint64_t block_id_helper(inode *node, int index, int mode)
             node->direct_blocks[index] = allocate_data_block();
             //printf("allocated node->direct_blocks[%d] %ld\n",index,node->direct_blocks[index]);
         }
-        printf("return node->direct_blocks[%d] %ld\n",index,node->direct_blocks[index]);
+        //printf("return node->direct_blocks[%d] %ld\n",index,node->direct_blocks[index]);
         return node->direct_blocks[index];
     }
     else if (index < (DIRECT_BLOCK + SING_INDIR * 512))

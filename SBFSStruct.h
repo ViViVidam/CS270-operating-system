@@ -7,7 +7,7 @@
 
 #include "nodes.h"
 
-#define MAX_FILENAME 64
+#define MAX_FILENAME 128
 #define MAX_PATH 1024
 #define ROOT 1
 #define NOREPLACE (1 << 0)

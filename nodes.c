@@ -358,7 +358,7 @@ int free_data_block(uint64_t id)
         uint64_t pre_head = head;
         printf("pre head %ld\n",pre_head);
         head = id;
-        write_block(pre_head, 0, sizeof(uint64_t), &id);
+        write_block(id, 0, sizeof(uint64_t), &pre_head);
     }
     printf("block freed %ld\n",id);
     return 0;

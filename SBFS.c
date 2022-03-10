@@ -93,7 +93,6 @@ uint64_t SBFS_namei(char *path) {
         filename[i] = 0;
         if(find_file_entry(inum, filename, &tmp)==-1)
             return 0;
-        printf("tmp.inum %ld\n",tmp.inum);
         inum = tmp.inum;
         if (inum == 0) {
             printf("namei, failed to find path: %s %s\n", path, filename);
@@ -104,7 +103,6 @@ uint64_t SBFS_namei(char *path) {
             inode node;
             read_inode(inum, &node);
             int filetype = (node.permission_bits & FILEMASK) >> 12;
-            printf("file type %d\n",filetype);
             if (filetype == SYMBOLIC) {
                 uint64_t target_inum = read_symlink(inum);
                 if (target_inum == 0) {
@@ -466,7 +464,7 @@ dir *SBFS_readdir(uint64_t inum,int init)
             assert( (node.permission_bits & FILEMASK) >> 12 == DIR);
             item_count = node.size / sizeof(dir);
         }
-        printf("inode size in dir %ld item count %ld\n",node.size,item_count);
+        //printf("inode size in dir %ld item count %ld\n",node.size,item_count);
         assert((node.size % sizeof(dir)) == 0);
         while (1) {
             if (i >= item_count)

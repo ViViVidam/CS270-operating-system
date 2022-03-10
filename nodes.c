@@ -331,7 +331,7 @@ uint64_t allocate_data_block() {
         write_block(0, 0, sizeof(uint64_t), &head);
         write_disk(res, tmp);
     }
-    printf("block allocated %ld\n",res);
+    printf("head %ld\nblock allocated %ld\n",head,res);
     return res;
 }
 

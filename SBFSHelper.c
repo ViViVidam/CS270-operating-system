@@ -208,7 +208,7 @@ uint64_t block_id_helper(inode *node, int index, int mode)
     }
     else if (index < (DIRECT_BLOCK + SING_INDIR * 512))
     {
-        printf("size %ld\n",sizeof(zero)/sizeof(uint64_t));
+        //printf("capable size %ld\n",sizeof(zero)/sizeof(uint64_t));
         if (node->sing_indirect_blocks[0] == 0)
         {
             if (mode == H_CREATE)
@@ -241,29 +241,32 @@ uint64_t block_id_helper(inode *node, int index, int mode)
             else
                 return 0;
         }
-        read_block_cache(node->doub_indirect_blocks[0], 0, BLOCKSIZE, tmp);
-        int next_level_index = (index - DIRECT_BLOCK - SING_INDIR * 512) / 512;
-        if (address[next_level_index] == 0)
+        char L1[BLOCKSIZE];
+        read_block_cache(node->doub_indirect_blocks[0], 0, BLOCKSIZE, L1);
+        uint64_t* L1_table = (uint64_t*)L1;
+        int L1_index = (index - DIRECT_BLOCK - SING_INDIR * 512) / 512;
+        if (L1_table[L1_index] == 0)
         {
             if (mode == H_CREATE)
             {
-                address[next_level_index] = allocate_data_block();
-                write_block_cache(node->doub_indirect_blocks[0], 0, BLOCKSIZE, tmp);
-                write_block_cache(address[next_level_index], 0, BLOCKSIZE, zero);
+                L1_table[L1_index] = allocate_data_block();
+                write_block_cache(node->doub_indirect_blocks[0], 0, BLOCKSIZE, L1_table);
+                write_block_cache(L1_table[L1_index], 0, BLOCKSIZE, zero);
             }
             else
                 return 0;
         }
-        int parent_id = address[next_level_index];
-        read_block(address[next_level_index], 0, BLOCKSIZE, tmp);
-        index = (index - DIRECT_BLOCK - SING_INDIR * 512) % 512;
-        if (address[index] == 0 && mode == H_CREATE)
+        char L2[BLOCKSIZE];
+        read_block_cache(L1_table[L1_index],0,BLOCKSIZE,L2);
+        int L2_index = (index - DIRECT_BLOCK - SING_INDIR * 512) % 512;
+        uint64_t * L2_table = (uint64_t*) L2;
+        if (L2_table[L2_index] == 0 && mode == H_CREATE)
         {
-            address[index] = allocate_data_block();
-            write_block(parent_id, 0, BLOCKSIZE, tmp);
+            L2_table[L2_index] = allocate_data_block();
+            write_block_cache(L1_table[L1_index], 0, BLOCKSIZE, L2);
         }
-        printf("return node->double indirect_blocks[%d] %ld\n",index,address[index - DIRECT_BLOCK]);
-        return address[index];
+        printf("\nreturn node->double indirect_blocks[%d(%d+%d+%d,%d)] %ld\n",index,DIRECT_BLOCK,SING_INDIR*512,L1_index,L2_index,L2_table[L2_index]);
+        return L2_table[L2_index];
     }
     else
     {

@@ -136,9 +136,16 @@ int mkfs()
     uint64_t *supernode = (uint64_t *)tmp;
     read_disk(0,tmp);
     FILE* fp = fopen("config","r");
-    char path[100];
-    fscanf(fp,"%s",path);
-    set_vol(path);
+    if(fp!=NULL) {
+        char path[100];
+        fscanf(fp, "%s", path);
+        printf("path %s\n", path);
+        set_vol(path);
+    }
+    else {
+        printf("set default path /dev/vdb\n");
+        set_vol("/dev/vdb");
+    }
     if(supernode[3] != 1) {
         memset(tmp, 0, sizeof(tmp));
         init_i_list();

@@ -134,7 +134,7 @@ int mkfs()
 {
     char tmp[BLOCKSIZE];
     uint64_t *supernode = (uint64_t *)tmp;
-    FILE* fp = fopen("./config","r");
+    FILE* fp = fopen("/home/centos/CS270-operating-system/config","r");
     if(fp!=NULL) {
         char path[100];
         fscanf(fp, "%s", path);
